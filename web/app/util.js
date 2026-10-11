@@ -83,14 +83,14 @@
   const LANG = {
     JavaScript: '#a8700a', TypeScript: '#1d4ed8', Python: '#3f6212', Go: '#0e7490',
     Rust: '#8a4b08', Java: '#9a3412', C: '#6c6862', 'C++': '#8f2410', 'C#': '#2c6b3f',
-    Ruby: '#b4260c', PHP: '#5b5f97', Swift: '#a16207', Kotlin: '#7c4a03',
+    Ruby: '#b4260c', PHP: '#3f5b78', Swift: '#a16207', Kotlin: '#7c4a03',
     Shell: '#4b5563', HTML: '#b45309', CSS: '#1d4ed8', SCSS: '#9a3412',
     Vue: '#2f7d5b', Svelte: '#b4260c', Dart: '#0e7490', Lua: '#2b4c8c',
-    Perl: '#31527a', Haskell: '#5b4636', Elixir: '#6b4a8f', Erlang: '#8f2410',
-    Clojure: '#2c6b3f', Scala: '#9a3412', R: '#1d4ed8', Julia: '#6b4a8f',
+    Perl: '#31527a', Haskell: '#5b4636', Elixir: '#7a3e1d', Erlang: '#8f2410',
+    Clojure: '#2c6b3f', Scala: '#9a3412', R: '#1d4ed8', Julia: '#9c4221',
     'Objective-C': '#31527a', Assembly: '#6c6862', Dockerfile: '#0e7490',
     Makefile: '#6c6862', JSON: '#6c6862', YAML: '#31527a', Markdown: '#4b5563',
-    SQL: '#7c4a03', Terraform: '#6b4a8f', Vim: '#3f6212', Nix: '#31527a'
+    SQL: '#7c4a03', Terraform: '#4b5563', Vim: '#3f6212', Nix: '#31527a'
   };
   U.langColor = function (name) { return LANG[name] || '#9a958c'; };
 
