@@ -103,18 +103,32 @@ if [[ ! -d /etc/letsencrypt/live/$DOMAIN ]]; then
 fi
 
 # ---------- 7. 自检 ----------
-say "自检"
-CODE_ANON=$(curl -s -o /dev/null -w '%{http_code}' -k "https://$DOMAIN/" || echo 000)
-CODE_AUTH=$(curl -s -o /dev/null -w '%{http_code}' -k -u "gh-web:$(true; echo -)" "https://$DOMAIN/" || echo 000)
-echo "  未鉴权访问 → $CODE_ANON（期望 401）"
-H1=$(curl -s -o /dev/null -w '%{http_code}' -k --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/" || echo 000)
-echo "  本地解析访问 → $H1（期望 401）"
-if [[ -f $HTPASSWD ]]; then
-  H2=$(curl -s -o /dev/null -w '%{http_code}' -k --resolve "$DOMAIN:443:127.0.0.1" \
-        -H "Authorization: Basic $(printf 'gh-web:%s' "${PW:-x}" | base64 -w0)" "https://$DOMAIN/" || echo 000)
-  echo "  静态首页 → $H2（期望 200）"
-  H3=$(curl -s -o /dev/null -w '%{http_code}' -k --resolve "$DOMAIN:443:127.0.0.1" \
-        -H "Authorization: Basic $(printf 'gh-web:%s' "${PW:-x}" | base64 -w0)" "https://$DOMAIN/api/rate_limit" || echo 000)
-  echo "  缓存层 /api/ → $H3（期望 200）"
+# 用 --resolve 强制打到本机，避免受 DNS/Cloudflare 缓存影响
+say "自检（--resolve $DOMAIN:443:127.0.0.1）"
+RES=(--resolve "$DOMAIN:443:127.0.0.1" -sk -o /dev/null -w '%{http_code}')
+
+CODE=$(curl "${RES[@]}" "https://$DOMAIN/" || echo 000)
+echo "  未鉴权访问首页        → ${CODE}   期望 401"
+
+if [[ -n "${PW:-}" ]]; then
+  AUTH=(-H "Authorization: Basic $(printf 'gh-web:%s' "$PW" | base64 -w0)")
+  C1=$(curl "${RES[@]}" "${AUTH[@]}" "https://$DOMAIN/" || echo 000)
+  echo "  带口令访问首页        → ${C1}   期望 200"
+  C2=$(curl "${RES[@]}" "${AUTH[@]}" "https://$DOMAIN/styles/main.css" || echo 000)
+  echo "  静态资源              → ${C2}   期望 200"
+  C3=$(curl "${RES[@]}" "${AUTH[@]}" "https://$DOMAIN/api/rate_limit" || echo 000)
+  echo "  缓存层 /api/          → ${C3}   期望 200"
+  # grep 可能无匹配（如鉴权失败），set -e 下必须兜住
+  A1=$(curl "${RES[@]}" "${AUTH[@]}" -D - "https://$DOMAIN/api/rate_limit" | tr -d '\r' | awk 'tolower($1)=="x-ghw-cache:"{print $2}' || true)
+  A2=$(curl "${RES[@]}" "${AUTH[@]}" -D - "https://$DOMAIN/api/rate_limit" | tr -d '\r' | awk 'tolower($1)=="x-ghw-cache:"{print $2}' || true)
+  echo "  缓存层 MISS→HIT       → ${A1:-?} → ${A2:-?}   期望 MISS → HIT"
+else
+  echo "  （未生成新口令，跳过鉴权项；如需重置见下方提示）"
 fi
+
+echo
 say "完成。打开 https://$DOMAIN/"
+echo "  口令文件：$HTPASSWD"
+if [[ -z "${PW:-}" ]]; then
+  echo "  忘记口令？删除该文件后重跑本脚本即可生成新的。"
+fi
