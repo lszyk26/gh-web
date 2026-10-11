@@ -180,12 +180,7 @@ async function main() {
     try { load(f); } catch (e) { errors.push('LOAD ' + f + ': ' + e.message); }
   }
 
-  // 手动挂载（不跑 index.html 里的 boot，避免依赖真实 DOM ready）
-  let app;
-  try {
-    app = w.eval('(function(){var a=Vue.createApp(App);Object.keys(C).forEach(function(k){a.component(k,C[k])});return a.mount("#app")})()');
-  } catch (e) { errors.push('MOUNT: ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')); }
-
+  // 走 app.js 自带的 boot 挂载（与线上完全一致）
   await new Promise(r => setTimeout(r, 300));
   // 让视图里的 await 走完
   for (let i = 0; i < 12; i++) await new Promise(r => setTimeout(r, 120));

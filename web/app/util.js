@@ -4,6 +4,9 @@
 (function () {
   'use strict';
 
+  /* 视图注册表：必须最先建立，各 views/*.js 会往这里挂组件 */
+  window.VIEWS = window.VIEWS || {};
+
   const U = {};
 
   /* ---------- html ---------- */
