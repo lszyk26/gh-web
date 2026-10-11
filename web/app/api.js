@@ -46,7 +46,9 @@
     opts = opts || {};
     const url = BASE + path;
     const headers = { 'Accept': opts.accept || 'application/vnd.github+json' };
-    if (API.token) headers['Authorization'] = 'Bearer ' + API.token;
+    // 注意：不能用 Authorization 头传 PAT —— 那会和 nginx 的 basic auth 抢同一个头，
+    // 结果 basic auth 直接把请求拒掉。所以走自定义头，由 nginx 翻成 Bearer 转发给 GitHub。
+    if (API.token) headers['X-GH-Token'] = API.token;
     if (opts.headers) Object.keys(opts.headers).forEach(function (k) { headers[k] = opts.headers[k]; });
 
     const init = { method: opts.method || 'GET', headers: headers };
