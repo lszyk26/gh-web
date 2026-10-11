@@ -171,8 +171,8 @@
 '                @click="setPeriod(p.k)">{{ p.label }}</button>' +
 '      </span>' +
 '      <span class="seg">' +
-'        <button :class="{on: mode === \\'created\\'}" @click="setMode(\\'created\\')">新晋</button>' +
-'        <button :class="{on: mode === \\'active\\'}" @click="setMode(\\'active\\')">活跃</button>' +
+'        <button :class="{on: mode === \'created\'}" @click="setMode(\'created\')">新晋</button>' +
+'        <button :class="{on: mode === \'active\'}" @click="setMode(\'active\')">活跃</button>' +
 '      </span>' +
 '      <select class="input" style="width:auto;min-width:132px" v-model="lang" @change="onLang">' +
 '        <option value="">全部语言</option>' +
@@ -198,7 +198,7 @@
 '      <p>把时间窗放宽到「本周」或「本月」，或清掉语言筛选后再看</p></div>' +
 
 '    <div v-else class="row-list">' +
-'      <a v-for="(r, i) in items" :key="r.id" class="row" :href="\\'#/\\' + r.full_name">' +
+'      <a v-for="(r, i) in items" :key="r.id" class="row" :href="\'#/\' + r.full_name">' +
 '        <span class="rank tnum" :class="{top: (page - 1) * 30 + i < 3}">{{ (page - 1) * 30 + i + 1 }}</span>' +
 '        <avatar :src="r.owner && r.owner.avatar_url" :alt="r.owner && r.owner.login" :size="24" square></avatar>' +
 '        <div class="row-main">' +
@@ -210,22 +210,22 @@
 '            {{ r.description }}</div>' +
 '          <div class="row-meta">' +
 '            <lang-dot v-if="r.language" :lang="r.language"></lang-dot>' +
-'            <span v-if="r.license && r.license.spdx_id && r.license.spdx_id !== \\'NOASSERTION\\'">· {{ U.license(r.license) }}</span>' +
+'            <span v-if="r.license && r.license.spdx_id && r.license.spdx_id !== \'NOASSERTION\'">· {{ U.license(r.license) }}</span>' +
 '            <span v-if="r.topics && r.topics.length" style="display:flex;gap:5px;flex-wrap:wrap">' +
 '              <span v-for="t in r.topics.slice(0, 3)" :key="t" class="lbl lbl-tag">{{ t }}</span></span>' +
 '          </div>' +
 '        </div>' +
 '        <div class="row-side" style="gap:12px">' +
-'          <span class="stars" :title="U.num(r.stargazers_count) + \\' 星标\\'">' +
+'          <span class="stars" :title="U.num(r.stargazers_count) + \' 星标\'">' +
 '            <icon name="star" :size="12"></icon>{{ U.compact(r.stargazers_count) }}</span>' +
-'          <span class="stars" style="color:var(--ink-4)" :title="U.num(r.forks_count) + \\' 复刻\\'">' +
+'          <span class="stars" style="color:var(--ink-4)" :title="U.num(r.forks_count) + \' 复刻\'">' +
 '            <icon name="fork" :size="12"></icon>{{ U.compact(r.forks_count) }}</span>' +
 '          <span class="nowrap" style="min-width:46px;text-align:right" :title="U.abs(r.pushed_at)">' +
 '            {{ U.rel(r.pushed_at) }}</span>' +
-'          <button class="btn btn-sm btn-quiet" :title="starOn(r) ? \\'取消星标\\' : \\'加星标\\'" ' +
+'          <button class="btn btn-sm btn-quiet" :title="starOn(r) ? \'取消星标\' : \'加星标\'" ' +
 '                  @click="toggleStar(r, $event)">' +
-'            <icon :name="starOn(r) ? \\'starFill\\' : \\'star\\'" :size="13" ' +
-'                  :style="{color: starOn(r) ? \\'var(--warn)\\' : \\'var(--ink-4)\\'}"></icon></button>' +
+'            <icon :name="starOn(r) ? \'starFill\' : \'star\'" :size="13" ' +
+'                  :style="{color: starOn(r) ? \'var(--warn)\' : \'var(--ink-4)\'}"></icon></button>' +
 '        </div>' +
 '      </a>' +
 '    </div>' +
