@@ -12,7 +12,8 @@
       return {
         loading: true, err: '',
         repos: [], starred: [], notif: [], following: [],
-        totalRepos: 0, totalStars: 0
+        totalRepos: 0, totalStars: 0,
+        trends: [], trendsLoading: true, trendsErr: ''
       };
     },
     computed: {
@@ -43,8 +44,25 @@
       unread: function () { return this.notif.filter(function (n) { return n.unread; }); },
       unreadTop: function () { return this.unread.slice(0, 6); }
     },
-    created: function () { this.load(); },
+    created: function () { this.load(); this.loadTrends(); },
     methods: {
+      // 概览页的「今日热门」：与 #/trends 同一套搜索语法（created:>=今天 + 星标门槛）。
+      // 失败时静默（搜索接口限流很严），不打断概览页主内容。
+      loadTrends: async function () {
+        this.trendsLoading = true;
+        const self = this;
+        try {
+          const d = new Date();
+          const p2 = function (n) { return String(n).padStart(2, '0'); };
+          const today = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+          const q = 'created:>=' + today + ' stars:>=5 fork:false archived:false';
+          const r = await API.searchRepos(q, 1, 'stars');
+          self.trends = ((r.data && r.data.items) || []).slice(0, 5);
+        } catch (e) {
+          self.trends = [];           // 限流等异常：整块卡片直接不显示
+        }
+        self.trendsLoading = false;
+      },
       load: async function () {
         this.loading = true; this.err = '';
         const self = this;
@@ -157,6 +175,26 @@
 '    </div>' +
 
 '    <div>' +
+'      <div class="card" style="margin-bottom:16px" v-if="trendsLoading || trends.length">' +
+'        <div class="card-head"><icon name="trending" :size="14"></icon><h3>今日热门</h3>' +
+'          <span style="flex:1"></span>' +
+'          <a class="btn btn-sm btn-quiet" href="#/trends">更多<icon name="right" :size="12"></icon></a></div>' +
+'        <div v-if="trendsLoading"><skel-rows :n="4"></skel-rows></div>' +
+'        <div v-else class="row-list">' +
+'          <a v-for="(r, i) in trends" :key="r.id" class="row" :href="\'#/\' + r.full_name">' +
+'            <span class="rank" :class="{top: i < 3}">{{ i + 1 }}</span>' +
+'            <div class="row-main">' +
+'              <div class="row-title"><span class="t" style="font-size:13px;font-weight:600">{{ r.full_name }}</span></div>' +
+'              <div class="row-meta">' +
+'                <lang-dot v-if="r.language" :lang="r.language" :show-text="false"></lang-dot>' +
+'                <span>{{ r.language || "—" }}</span></div>' +
+'            </div>' +
+'            <div class="row-side">' +
+'              <span class="stars"><icon name="star" :size="12"></icon>{{ U.compact(r.stargazers_count) }}</span></div>' +
+'          </a>' +
+'        </div>' +
+'      </div>' +
+
 '      <div class="card" style="margin-bottom:16px">' +
 '        <div class="card-head"><icon name="activity" :size="14"></icon><h3>语言构成</h3></div>' +
 '        <div class="card-pad" v-if="topLangs.length">' +
