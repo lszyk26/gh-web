@@ -73,7 +73,7 @@ install -m 644 "$CONF_SRC" "$CONF_DST"
 if [[ ! -d /etc/letsencrypt/live/$DOMAIN ]]; then
   say "尚未签发证书，先启用 80-only 过渡配置"
   cat > "$CONF_DST" <<EOF
-limit_req_zone \$binary_remote_addr zone=ghweb:10m rate=2r/s;
+limit_req_zone \$binary_remote_addr zone=ghweb:10m rate=30r/s;
 server {
     listen 80;
     server_name $DOMAIN;
