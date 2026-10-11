@@ -22,10 +22,10 @@
   ];
 
   const PERIODS = [
-    { k: 'today', label: '今日', days: 0, min: 10 },
-    { k: 'week', label: '本周', days: 7, min: 20 },
-    { k: 'month', label: '本月', days: 30, min: 50 },
-    { k: '90d', label: '近 90 天', days: 90, min: 100 }
+    { k: 'today', label: '今日', days: 0, min: 10, maxActive: 30000 },
+    { k: 'week', label: '本周', days: 7, min: 20, maxActive: 30000 },
+    { k: 'month', label: '本月', days: 30, min: 50, maxActive: 30000 },
+    { k: '90d', label: '近 90 天', days: 90, min: 100, maxActive: 30000 }
   ];
 
   function isoDaysAgo(days) {
@@ -90,11 +90,10 @@
         const bits = [];
         if (this.mode === 'active') {
           bits.push('pushed:>=' + since);
-          bits.push('stars:>=' + this.curPeriod.min);
-          // 关键：active 模式必须设星标上限。否则按星标排序时，
-          // freeCodeCamp / public-apis 这类几十万星、且每天都在推送的
-          // 巨型仓库会永久霸榜，"热门"就失去意义了。
-          bits.push('stars:<=30000');
+          // ⚠️ 星标上限必须用「区间」语法 stars:min..max。
+          //    写成 stars:<=30000 是无效的：GitHub 会把它当成普通文本词去匹配，
+          //    结果不是收窄而是暴涨（实测 11 万 -> 3.4 亿），巨头照样霸榜。
+          bits.push('stars:' + this.curPeriod.min + '..' + this.curPeriod.maxActive);
         } else {
           bits.push('created:>=' + since);
           bits.push('stars:>=' + this.curPeriod.min);
