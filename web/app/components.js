@@ -76,7 +76,11 @@
     computed: {
       path: function () { return ICONS[this.name] || ICONS.info; },
       style: function () {
-        return { width: this.size + 'px', height: this.size + 'px', strokeWidth: this.sw || '' };
+        // strokeWidth 必须带单位：CSS 里 "2.4" 是非法值，浏览器会整条忽略，
+        // 于是 :sw="2.4" 一直被静默丢掉。这里统一补 px。
+        const sw = this.sw;
+        const swCss = sw ? (/^\d*\.?\d+$/.test(String(sw)) ? sw + 'px' : String(sw)) : '';
+        return { width: this.size + 'px', height: this.size + 'px', strokeWidth: swCss };
       }
     },
     template: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" :style="style" v-html="path"></svg>'

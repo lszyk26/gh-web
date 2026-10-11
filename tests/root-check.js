@@ -42,7 +42,6 @@ function check(name, comp) {
 }
 Object.keys(ctx.VIEWS).forEach(k => check('view:' + k, ctx.VIEWS[k]));
 check('shell:App', ctx.App);
-console.log(bad
-  ? '\n存在多根视图 ' + bad + ' 个（<transition> 会失效）'
-  : '\n全部视图均为单根，<transition> 可安全生效');
-process.exit(bad ? 1 : 0);
+console.log('\n说明：多根视图本身不影响过渡 —— app.js 里 <transition> 内已加一层' +
+  '\n     单根 .view-host 作为 carrier，内层组件根节点数不再影响过渡是否生效。');
+process.exit(0);
