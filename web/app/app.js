@@ -31,6 +31,7 @@
       case undefined: name = 'dashboard'; break;
       case 'repos': name = 'repos'; p.page = Number(query.page || 1); break;
       case 'stars': name = 'stars'; p.page = Number(query.page || 1); break;
+      case 'trends': name = 'trends'; p.period = query.period; p.mode = query.mode; p.lang = query.lang; break;
       case 'notifications': name = 'notifications'; break;
       case 'search': name = 'search'; p.q = query.q || ''; p.page = Number(query.page || 1); p.type = query.type || 'repositories'; break;
       case 'settings': name = 'settings'; break;
@@ -122,7 +123,8 @@
           search: '搜索', settings: '设置', user: '用户', repo: '仓库', code: '代码',
           issues: '议题', issue: '议题', pulls: '拉取请求', pull: '拉取请求',
           commits: '提交', commit: '提交', branches: '分支', releases: '发布',
-          release: '发布', actions: '流水线', run: '流水线', compare: '比较'
+          release: '发布', actions: '流水线', run: '流水线', compare: '比较',
+          trends: '热门'
         };
         out.push({ label: names[this.route.name] || '概览', to: null });
         if (p.owner) out.unshift({ label: p.owner, to: '#/users/' + p.owner });
@@ -274,6 +276,11 @@
   '            <span v-if="counts.notif" class="nav-count">{{ counts.notif }}</span></div>' +
   '          <div class="nav-item" :class="{on: route.name===\'search\'}" @click="go(\'#/search\')">' +
   '            <icon name="search" :size="15"></icon><span class="lbl">搜索</span></div>' +
+  '        </div>' +
+  '        <div class="nav-group">' +
+  '          <div class="nav-label">发现</div>' +
+  '          <div class="nav-item" :class="{on: route.name===\'trends\'}" @click="go(\'#/trends\')">' +
+  '            <icon name="trending" :size="15"></icon><span class="lbl">热门项目</span></div>' +
   '        </div>' +
   '        <div class="nav-group">' +
   '          <div class="nav-label">我的</div>' +
