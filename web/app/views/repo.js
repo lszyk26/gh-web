@@ -177,7 +177,7 @@
 '        <span v-if="t.n !== null && t.n !== undefined" class="n">{{ t.n }}</span></a>' +
 '    </div>' +
 
-'    <div style="display:grid;grid-template-columns:1fr 300px;gap:20px" class="repo-cols">' +
+'    <div class="repo-cols">' +
 '      <div style="min-width:0">' +
 '        <div class="card" style="margin-bottom:16px">' +
 '          <div class="card-head">' +

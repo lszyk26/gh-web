@@ -143,7 +143,7 @@
 '    </div>' +
 '  </div>' +
 
-'  <div class="issue-cols" style="display:grid;grid-template-columns:1fr 268px;gap:20px">' +
+'  <div class="issue-cols">' +
 '    <div style="min-width:0">' +
 
 /* body */

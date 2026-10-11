@@ -364,6 +364,17 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
 
 .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
+/* ---------- 两栏布局（窄屏自动塌成单栏） ----------
+   注意：这些必须写在 CSS 里而不是行内 style，
+   行内样式优先级高于媒体查询，会导致手机上永远塌不下来。 */
+.dash-cols{display:grid;grid-template-columns:1.55fr 1fr;gap:16px}
+.repo-cols{display:grid;grid-template-columns:1fr 300px;gap:20px}
+.issue-cols,.pr-cols{display:grid;grid-template-columns:1fr 268px;gap:20px}
+.user-cols{display:grid;grid-template-columns:1fr 262px;gap:18px}
+@media(max-width:1080px){
+  .dash-cols,.repo-cols,.issue-cols,.pr-cols,.user-cols{grid-template-columns:1fr}
+}
+
 @media(max-width:900px){
   .app{grid-template-columns:1fr}
   .sidebar{position:fixed;left:0;top:0;z-index:150;transform:translateX(-102%);

@@ -119,7 +119,7 @@
 '      <icon name="code" :size="14"></icon>代码片段 <span class="n">{{ gists.length }}</span></div>' +
 '  </div>' +
 
-'  <div v-if="tab === \'repos\'" style="display:grid;grid-template-columns:1fr 262px;gap:18px" class="user-cols">' +
+'  <div v-if="tab === \'repos\'" class="user-cols">' +
 '    <div style="min-width:0">' +
 '      <div class="card">' +
 '        <div class="card-head" style="gap:9px">' +

@@ -204,7 +204,7 @@
 '      <span v-if="t.n" class="n">{{ t.n }}</span></div>' +
 '  </div>' +
 
-'  <div style="display:grid;grid-template-columns:1fr 268px;gap:20px" class="pr-cols">' +
+'  <div class="pr-cols">' +
 '    <div style="min-width:0">' +
 
       /* ---------- conversation ---------- */
