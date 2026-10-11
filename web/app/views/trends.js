@@ -2,9 +2,9 @@
    views/trends.js — 今日 / 本周 / 本月 热门项目
    ------------------------------------------------------------
    GitHub 官方 API 没有 trending 端点，这里用搜索语法「模拟」：
-     新晋热门  created:>=<日期>  + stars:>=N   （最近新建、且已经涨粉）
-     近期活跃  pushed:>=<日期>   + stars:>=N   （老仓库但最近仍在推进）
-             + fork:false archived:false       （滤掉 fork 与归档）
+     新晋项目  created:>=<日期> + stars:>=N                  （新建且已涨粉）
+     活跃项目  created:>=<日期> + pushed:>=<日期> + stars:>=N  （新建且仍在推送）
+     两者都带 fork:false archived:false（滤掉 fork 与归档）
    时间窗用本地日期算，格式 YYYY-MM-DD（GitHub 搜索要求）。
    注意：搜索接口限流较严（约 30 次/分钟），因此本页不做自动轮询。
    ============================================================ */
@@ -22,10 +22,10 @@
   ];
 
   const PERIODS = [
-    { k: 'today', label: '今日', days: 0, min: 10, maxActive: 30000 },
-    { k: 'week', label: '本周', days: 7, min: 20, maxActive: 30000 },
-    { k: 'month', label: '本月', days: 30, min: 50, maxActive: 30000 },
-    { k: '90d', label: '近 90 天', days: 90, min: 100, maxActive: 30000 }
+    { k: 'today', label: '今日', days: 0, min: 5 },
+    { k: 'week', label: '本周', days: 7, min: 20 },
+    { k: 'month', label: '本月', days: 30, min: 50 },
+    { k: '90d', label: '近 90 天', days: 90, min: 100 }
   ];
 
   function isoDaysAgo(days) {
@@ -63,12 +63,12 @@
       },
       sub: function () {
         return this.mode === 'active'
-          ? '近期仍在推进的中型项目（已排除超大仓库，否则榜单永远是那几个巨头霸榜）'
-          : '最近新建、且已快速积累星标的项目';
+          ? '时间窗内新建、且至今仍在持续推送的项目——比「新晋」更看活跃度'
+          : '时间窗内新建、且已快速积累星标的项目（含已沉寂的）';
       },
       headline: function () {
         if (this.err) return '热门项目';
-        return this.curPeriod.label + (this.mode === 'active' ? '活跃' : '新晋') +
+        return this.curPeriod.label + (this.mode === 'active' ? '活跃项目' : '新晋项目') +
           (this.lang ? ' · ' + this.lang : '');
       }
     },
@@ -88,16 +88,14 @@
         const days = this.curPeriod.days;
         const since = isoDaysAgo(days);
         const bits = [];
-        if (this.mode === 'active') {
-          bits.push('pushed:>=' + since);
-          // ⚠️ 星标上限必须用「区间」语法 stars:min..max。
-          //    写成 stars:<=30000 是无效的：GitHub 会把它当成普通文本词去匹配，
-          //    结果不是收窄而是暴涨（实测 11 万 -> 3.4 亿），巨头照样霸榜。
-          bits.push('stars:' + this.curPeriod.min + '..' + this.curPeriod.maxActive);
-        } else {
-          bits.push('created:>=' + since);
-          bits.push('stars:>=' + this.curPeriod.min);
-        }
+        // 两个模式都以「时间窗内新建」为基准：
+        //   新晋 → 只看涨粉（最近冒出来、已经积累了星标）
+        //   活跃 → 额外要求时间窗内仍有推送（真在推进，而不是建完就僵尸）
+        // 注意：不要用 stars:<=N 收窄 —— GitHub 不认这个语法，会把它当普通
+        //       文本词匹配，结果暴涨（实测 11 万 -> 3.4 亿）。要用区间 stars:a..b。
+        bits.push('created:>=' + since);
+        if (this.mode === 'active') bits.push('pushed:>=' + since);
+        bits.push('stars:>=' + this.curPeriod.min);
         bits.push('fork:false');
         bits.push('archived:false');
         if (this.lang) bits.push('language:' + this.lang);
