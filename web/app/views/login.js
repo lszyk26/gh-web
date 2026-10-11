@@ -83,7 +83,7 @@
 '      </div>' +
 '    </div>' +
 '    <div class="login-art-in" style="font-family:var(--mono);font-size:10.5px;opacity:.45;letter-spacing:.05em">' +
-'      gh.0lt.top · 仅本人使用</div>' +
+'      ghs.0lt.top · 仅本人使用</div>' +
 '  </div>' +
 
 '  <div class="login-form">' +

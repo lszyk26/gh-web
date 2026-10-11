@@ -15,7 +15,7 @@ CONF_SRC=$ROOT/deploy/gh-web.conf
 CONF_DST=/etc/nginx/conf.d/zz-gh-web.conf
 CACHE_DIR=/var/cache/nginx/gh-api
 HTPASSWD=/etc/nginx/.ghweb.htpasswd
-DOMAIN=gh.0lt.top
+DOMAIN=ghs.0lt.top
 
 say() { printf '\033[1m==>\033[0m %s\n' "$*"; }
 
@@ -52,6 +52,9 @@ PY
 else
   say "已存在口令文件，保持不变（重置：删除 $HTPASSWD 后重跑本脚本）"
 fi
+
+# 口令文件已存在时，可通过 GHWEB_PW 传入现有口令，让第 7 步的完整自检跑得起来
+PW="${GHWEB_PW:-${PW:-}}"
 
 # ---------- 4. 静态权限 ----------
 say "修正静态资源权限"

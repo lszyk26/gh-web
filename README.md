@@ -2,7 +2,7 @@
 
 GitHub 的高速只读镜像。跑在自己的服务器上，只为一个人服务。
 
-打开 `https://gh.0lt.top/`，贴上 Personal Access Token 就能用。
+打开 `https://ghs.0lt.top/`，贴上 Personal Access Token 就能用。
 
 ---
 
@@ -31,7 +31,7 @@ GitHub 的高速只读镜像。跑在自己的服务器上，只为一个人服�
 ## 架构
 
 ```
-浏览器 ──► gh.0lt.top ──┬─ 静态资源：/opt/gh-web/web 本地直出
+浏览器 ──► ghs.0lt.top ──┬─ 静态资源：/opt/gh-web/web 本地直出
    (basic auth)         └─ /api/*：nginx proxy_cache ──► api.github.com
                                                   └─ 命中则 8ms 返回，未命中回源并落盘
 ```
@@ -79,7 +79,7 @@ sudo bash /opt/gh-web/deploy/install.sh --with-cert  # 首次签发证书
 
 幂等，可反复执行；覆盖 nginx 配置前会自动留 `.bak-install-<ts>`。
 
-DNS 需要一条 A 记录：`gh.0lt.top` → 本机公网 IP。**签发证书时必须灰云直连**，签完再考虑开橙云。
+DNS 需要一条 A 记录：`ghs.0lt.top` → 本机公网 IP。**签发证书时必须灰云直连**，签完再考虑开橙云。
 
 > ⚠️ **站点配置文件名必须保持 `zz-` 前缀**（`/etc/nginx/conf.d/zz-gh-web.conf`）。
 > nginx 按 `conf.d` 字母序加载，**第一个**监听 80 端口的 `server` 会顺带成为该端口的默认服务器。
