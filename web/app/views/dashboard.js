@@ -105,7 +105,7 @@
 '      <div class="m">正在关注的开发者</div></div>' +
 '  </div>' +
 
-'  <div class="dash-cols" style="display:grid;grid-template-columns:1.55fr 1fr;gap:16px">' +
+'  <div class="dash-cols">' +
 '    <div>' +
 '      <div class="card" style="margin-bottom:16px">' +
 '        <div class="card-head"><icon name="clock" :size="14"></icon><h3>最近推送</h3>' +
