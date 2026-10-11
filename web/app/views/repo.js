@@ -11,7 +11,7 @@
     data: function () {
       return {
         loading: true, err: '',
-        repo: null, langs: null, readme: '', contributors: [],
+        repo: null, langs: null, readme: '', readmeLoading: false, contributors: [],
         lastCommit: null, counts: { issues: null, pulls: null, stars: null },
         topicsOpen: false, watching: false, starBusy: false
       };
@@ -52,22 +52,31 @@
     created: function () { this.load(); },
     methods: {
       load: async function () {
-        this.loading = true; this.err = ''; this.readme = '';
+        this.loading = true; this.err = ''; this.readme = ''; this.readmeLoading = true;
         const self = this;
+        const key = this.o + '/' + this.r;
         try {
+          // README 与仓库元数据并行取：此前必须先等 /repos/:o/:r 返回、
+          // 再从它拿到 default_branch 才发 README 请求，白等一个 RTT，
+          // 用户就会先看到「这个仓库没有 README」，等一下才刷出内容。
+          const pReadme = API.readme(this.o, this.r).then(function (rd) {
+            if (rd && rd.content) return decodeB64(rd.content);
+            if (rd && rd.download_url) {
+              return fetch(rd.download_url).then(function (x) { return x.text(); });
+            }
+            return '';
+          }).catch(function () { return ''; });
+          // 无论成功失败都要收掉骨架屏，并用 key 判定，避免切换仓库时串内容
+          pReadme.then(function (txt) {
+            if (key === self.o + '/' + self.r) { self.readme = txt || ''; self.readmeLoading = false; }
+          });
+
           const repo = await API.repo(this.o, this.r);
           self.repo = repo;
           self.lastCommit = null;
           API.languages(this.o, this.r).then(function (l) { self.langs = l; }).catch(function () { });
           API.contributors(this.o, this.r).then(function (c) {
             self.contributors = Array.isArray(c) ? c : [];
-          }).catch(function () { });
-          API.readme(this.o, this.r, repo.default_branch).then(function (rd) {
-            if (rd && rd.content) self.readme = decodeB64(rd.content);
-            else if (rd && rd.download_url) {
-              fetch(rd.download_url).then(function (x) { return x.text(); })
-                .then(function (t) { self.readme = t; }).catch(function () { });
-            }
           }).catch(function () { });
           API.commits(this.o, this.r, { sha: repo.default_branch, per_page: 1 })
             .then(function (c) { self.lastCommit = (c.data || [])[0] || null; }).catch(function () { });
@@ -190,6 +199,12 @@
 '          <div class="card-body" v-if="readme"><markdown :source="readme"></markdown>' +
 '            <p class="dimmer xs" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--rule)">' +
 '              README.md · 渲染自仓库默认分支</p></div>' +
+'          <div v-else-if="readmeLoading" class="card-body" style="display:flex;flex-direction:column;gap:10px">' +
+'            <div class="skel" style="height:20px;width:44%"></div>' +
+'            <div class="skel" style="height:12px;width:100%"></div>' +
+'            <div class="skel" style="height:12px;width:92%"></div>' +
+'            <div class="skel" style="height:12px;width:97%"></div>' +
+'            <div class="skel" style="height:12px;width:68%"></div></div>' +
 '          <div v-else class="empty" style="padding:36px">' +
 '            <icon name="book" :size="22"></icon><b>这个仓库没有 README</b>' +
 '            <p>浏览代码目录查看全部文件</p></div>' +
