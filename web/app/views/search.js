@@ -86,6 +86,10 @@
       go: function (p) {
         this.$emit('nav', '#/search?q=' + encodeURIComponent(this.q) + '&type=' + this.type + '&page=' + p);
       },
+      shortRepo: function (it) {
+        const m = (it.repository_url || '').match(/repos\/([^/]+)\/([^/]+)$/);
+        return m ? m[1] + '/' + m[2] : (it.repository_url || '');
+      },
       open: function (path) { this.$emit('nav', path); },
       repoHref: function (it) { return '#/' + it.full_name; },
       issueHref: function (it) {
@@ -190,7 +194,7 @@
 '          <div class="row-main">' +
 '            <div class="row-title"><span class="t">{{ it.title }}</span></div>' +
 '            <div class="row-meta">' +
-'              <span>{{ (it.repository_url || "").replace(/.*repos\//, "") }}</span>' +
+'              <span>{{ shortRepo(it) }}</span>' +
 '              <span>·</span><span>#{{ it.number }}</span>' +
 '              <span>·</span><span>{{ it.user && it.user.login }}</span>' +
 '              <span>·</span><rel-time :iso="it.updated_at"></rel-time>' +
