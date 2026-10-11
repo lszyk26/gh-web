@@ -189,7 +189,7 @@
       .replace(/<\s*(script|iframe|object|embed|form|style|link|meta)[^>]*>/gi, '')
       .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
       .replace(/javascript:/gi, '');
-    return U.rewriteImg(html);
+    return U.rewriteImg(U.rewriteLinks(html));
   };
 
   /* ---------- markdown 里的相对图片 ---------- */
@@ -248,6 +248,34 @@
         const abs = U.resolveImgSrc(src);
         return abs === src ? m : head + ' src="' + abs + '"';
       });
+  };
+
+  // 相对链接同理：README 里的 [说明](assets/x.md)、[文档](references/01.md)
+  // 在 SPA 里会跳到本站路径，命中 SPA 兜底 → 页面错乱。统一指向 GitHub。
+  // 目录链接一律给 /blob/，GitHub 会自己 301 到 /tree/。
+  U.resolveLinkHref = function (href) {
+    const raw = String(href == null ? '' : href).trim();
+    if (!raw) return '';
+    if (/^(https?:|data:|blob:|mailto:|tel:|#|\/\/)/i.test(raw)) return raw;
+    let frag = '';
+    let body = raw;
+    const hi = body.indexOf('#');
+    if (hi >= 0) { frag = body.slice(hi); body = body.slice(0, hi); }
+    const q = body.indexOf('?');
+    let query = '';
+    if (q >= 0) { query = body.slice(q); body = body.slice(0, q); }
+    const path = body.replace(/^\.\//, '').replace(/^\//, '');
+    const ctx = imgCtx || U.ctxFromHash();
+    const enc = path.split('/').map(encodeURIComponent).join('/');
+    if (!ctx) return 'https://github.com/' + enc + frag;
+    return 'https://github.com/' + ctx.o + '/' + ctx.r + '/blob/' +
+      encodeURIComponent(ctx.ref) + '/' + enc + query + frag;
+  };
+  U.rewriteLinks = function (html) {
+    return String(html || '').replace(/(<a\b[^>]*?)\shref=(["'])([^"']*)\2/gi, function (m, head, q, href) {
+      const abs = U.resolveLinkHref(href);
+      return abs === href ? m : head + ' href=' + q + abs + q;
+    });
   };
 
   /* ---------- text ---------- */

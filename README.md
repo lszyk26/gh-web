@@ -258,6 +258,39 @@ bash /opt/gh-web/deploy/bump.sh 20261011d  # 或指定
 
 ---
 
+## Markdown 里的相对图片与链接（已修）
+
+README 写成相对路径是 GitHub 上的常规写法：
+
+```html
+<img src="assets/showcase/hero.png" width="100%" />
+[片段时间点与导出参数](assets/showcase/mario-clips.md)
+```
+
+但 SPA 里浏览器按**当前页面地址**解析相对路径，于是会去要
+`https://ghs.0lt.top/<owner>/<repo>/assets/...` → 命中 SPA 兜底 → **图片全部破图**、
+点链接还会跳到错乱的页面。GitHub 官方站靠 `/raw/` 端点服务这些资源，我们得自己改写。
+
+做法（`util.js` + `components.js`）：
+
+- `U.rewriteImg(html)` / `U.rewriteLinks(html)`：把 `src=` / `href=` 里的相对路径改写为绝对地址，
+  图片 → `raw.githubusercontent.com/<o>/<r>/<ref>/<path>`（线上实测唯一可达的直链），
+  链接 → `github.com/<o>/<r>/blob/<ref>/<path>`（目录链接会由 GitHub 自己 301 到 `/tree/`）。
+- 在 `U.md()` 返回前统一调用，**必须在 marked 解析之后**：marked 的 gfm 允许正文里直接写
+  `<img>` 标签，它不会为这类标签解析相对路径。
+- 仓库上下文（owner/repo/ref）由 `<markdown>` 组件新增的 `owner` / `repo` / `branch` 属性传入，
+  各视图（repo、code、issue、pull、commit、releases）都要带上。取不到时用
+  `U.ctxFromHash()` 从路由兜底；再取不到就退回 `github.com/raw/<path>`（靠 Referer 猜仓库）。
+
+> ⚠️ **别把那个属性叫 `ref`**：`ref` 是 Vue 的保留属性（模板引用），写在组件上**不会**作为 prop
+> 传进去，只会静默丢失 —— 表现就是「上下文永远为空、图片照样破」。这里用的是 `branch`。
+>
+> ⚠️ **`tests/render-check.js` 里必须补 `w.TextDecoder`**：jsdom 的 `window` 不带 `TextDecoder`，
+> 而 `repo.js` 用它解 base64 README，缺了会被 `catch` 成空串 → **静默**落到「这个仓库没有 README」
+> 空状态，测试却因为页面里另有「README」字样而假通过。
+
+---
+
 ## 已知的「多根模板」与过渡
 
 `run / commit / compare / issue / pull / user` 这 6 个详情页的模板是
@@ -274,9 +307,11 @@ Vue 的 `<transition>` 要求直接子节点**单根**，否则过渡会**静默
 ## 测试
 
 ```bash
-node /opt/gh-web/tests/compile-check.js   # 38 个模板语法
-node /opt/gh-web/tests/render-check.js    # jsdom 跑 22 条路由 + 内容断言
-node /opt/gh-web/tests/root-check.js      # 多根视图清单
+node /opt/gh-web/tests/compile-check.js   # 39 个模板语法
+node /opt/gh-web/tests/render-check.js    # jsdom 跑 24 条路由 + 内容断言
+node /opt/gh-web/tests/img-check.js       # Markdown 相对图片/链接的改写（20 项断言）
+node /opt/gh-web/tests/mobile-check.js    # 375px 视口下的列表行回归
+node /opt/gh-web/tests/root-check.js      # 多根视图清单（提示用）
 ```
 
 `render-check.js` 会从 `app/views/` **读目录**加载脚本，所以它无法发现
