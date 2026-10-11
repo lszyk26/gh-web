@@ -83,7 +83,7 @@
 '    </div>' +
 '    <h1 style="margin-top:11px;font-size:20px;line-height:1.4">{{ msg.title }}</h1>' +
 '    <div v-if="msg.body" class="card" style="margin-top:11px">' +
-'      <div class="md-body"><markdown :source="msg.body"></markdown></div></div>' +
+'      <div class="md-body"><markdown :source="msg.body" :owner="o" :repo="r"></markdown></div></div>' +
 '    <div style="display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap">' +
 '      <avatar :src="commit.author && commit.author.avatar_url" :alt="(commit.commit.author||{}).name" :size="24"></avatar>' +
 '      <span class="sm"><b>{{ (commit.commit.author || {}).name }}</b>' +
@@ -129,7 +129,7 @@
 '        <avatar :src="c.user && c.user.avatar_url" :alt="c.user && c.user.login" :size="20"></avatar>' +
 '        <span class="sm"><b>{{ c.user && c.user.login }}</b></span>' +
 '        <span class="xs dimmer"><rel-time :iso="c.created_at"></rel-time></span></div>' +
-'      <markdown :source="c.body"></markdown>' +
+'      <markdown :source="c.body" :owner="o" :repo="r"></markdown>' +
 '    </div>' +
 '    <div class="card-pad">' +
 '      <textarea class="input" rows="3" v-model="comment" placeholder="对这个提交发表评论…"></textarea>' +

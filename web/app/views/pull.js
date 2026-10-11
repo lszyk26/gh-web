@@ -218,7 +218,7 @@
 '            <a class="btn btn-sm btn-quiet" :href="pr.html_url" target="_blank" rel="noopener noreferrer">' +
 '              <icon name="external" :size="12"></icon>GitHub</a>' +
 '          </div>' +
-'          <div class="md-body" v-if="pr.body"><markdown :source="pr.body"></markdown></div>' +
+'          <div class="md-body" v-if="pr.body"><markdown :source="pr.body" :owner="o" :repo="r"></markdown></div>' +
 '          <div v-else class="md-body dim" style="font-style:italic">（没有描述）</div>' +
 '        </div>' +
 
@@ -231,7 +231,7 @@
 '            <a class="btn btn-sm btn-quiet" :href="c.html_url" target="_blank" rel="noopener noreferrer">' +
 '              <icon name="link" :size="12"></icon></a>' +
 '          </div>' +
-'          <div class="md-body"><markdown :source="c.body"></markdown></div>' +
+'          <div class="md-body"><markdown :source="c.body" :owner="o" :repo="r"></markdown></div>' +
 '        </div>' +
 
 '        <div v-if="reviews.length" class="card" style="margin-bottom:14px">' +

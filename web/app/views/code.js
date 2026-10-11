@@ -253,7 +253,7 @@
 '        <p>无法在浏览器中预览 {{ ext.toUpperCase() }} 文件（{{ sizeLabel }}）</p>' +
 '        <button class="btn" @click="download"><icon name="download" :size="13"></icon>下载原始文件</button></div>' +
 '      <div v-else-if="isMd && mdPreview" style="padding:16px">' +
-'        <markdown :source="fileText"></markdown></div>' +
+'        <markdown :source="fileText" :owner="o" :repo="r" :ref="ref"></markdown></div>' +
 '      <code-block v-else :code="fileText" :lang="lang" :path="(file && file.path) || path" ' +
 '                  :head="false"></code-block>' +
 '      <div v-if="tooBig" class="banner" style="margin:12px">' +
