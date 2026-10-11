@@ -189,7 +189,63 @@
       .replace(/<\s*(script|iframe|object|embed|form|style|link|meta)[^>]*>/gi, '')
       .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
       .replace(/javascript:/gi, '');
-    return html;
+    return U.rewriteImg(html);
+  };
+
+  /* ---------- markdown 里的相对图片 ---------- */
+  // Markdown 中的图片常写成相对路径（<img src="assets/showcase/hero.png">，
+  // 这是 GitHub 官方 README 的常见写法）。SPA 里浏览器会按「当前页面地址」解析，
+  // 于是跑到本站 /<owner>/<repo>/assets/... 去要图，必然 404 —— 即「图片不见了」。
+  // 这里统一改写成 raw.githubusercontent.com 的绝对地址。
+  // 必须在 marked 解析之后做：marked 的 gfm 允许正文里直接写 <img> HTML 标签，
+  // 它不会为这类标签解析相对路径。
+  let imgCtx = null;
+
+  U.imgContext = function (o, r, ref) {
+    if (o && r) imgCtx = { o: o, r: r, ref: ref || 'HEAD' };
+    return imgCtx;
+  };
+
+  // 兜底：组件没传上下文时，从 hash 路由里解析出 owner/repo/ref
+  const RESERVED = ['repos', 'stars', 'trends', 'notifications', 'search',
+    'settings', 'users', 'orgs', 'login', 'logout'];
+  U.ctxFromHash = function () {
+    const h = String((window.location && window.location.hash) || '').replace(/^#\/?/, '');
+    const parts = h.split('/').filter(function (x) { return x !== ''; }).map(decodeURIComponent);
+    if (parts.length < 2 || RESERVED.indexOf(parts[0]) >= 0) return null;
+    const ctx = { o: parts[0], r: parts[1], ref: 'HEAD' };
+    if (parts[2] === 'code') { if (parts[4]) ctx.ref = parts[4]; }
+    else if (parts[2] === 'tree' || parts[2] === 'blob') { if (parts[3]) ctx.ref = parts[3]; }
+    return ctx;
+  };
+
+  U.resolveImgSrc = function (src) {
+    const raw = String(src == null ? '' : src).trim();
+    if (!raw) return '';
+    // 已是绝对地址 / 协议相对 / 数据 / 锚点 → 原样保留
+    if (/^(https?:|data:|blob:|mailto:|#|\/\/)/i.test(raw)) return raw;
+    const path = raw.replace(/^\.\//, '').replace(/^\//, '');
+    const ctx = imgCtx || U.ctxFromHash();
+    if (ctx) {
+      return 'https://raw.githubusercontent.com/' + ctx.o + '/' + ctx.r + '/' +
+        encodeURIComponent(ctx.ref) + '/' +
+        path.split('/').map(encodeURIComponent).join('/');
+    }
+    // 完全取不到仓库信息：退回 GitHub 的 raw 端点，它会按 Referer 猜仓库并跳转
+    return 'https://github.com/raw/' + path;
+  };
+
+  // 只改 src= 属性，不碰 alt/title 里的内容
+  U.rewriteImg = function (html) {
+    return String(html || '')
+      .replace(/(<img\b[^>]*?)\ssrc=(["'])([^"']*)\2/gi, function (m, head, q, src) {
+        const abs = U.resolveImgSrc(src);
+        return abs === src ? m : head + ' src=' + q + abs + q;
+      })
+      .replace(/(<img\b[^>]*?)\ssrc=([^\s"'>]+)/gi, function (m, head, src) {
+        const abs = U.resolveImgSrc(src);
+        return abs === src ? m : head + ' src="' + abs + '"';
+      });
   };
 
   /* ---------- text ---------- */

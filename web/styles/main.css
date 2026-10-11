@@ -250,7 +250,7 @@ textarea.input{height:auto;padding:8px 10px;resize:vertical;line-height:1.55}
 .md table{border-collapse:collapse;margin:12px 0;font-size:13px;display:block;overflow-x:auto}
 .md th,.md td{border:1px solid var(--rule);padding:6px 10px;text-align:left}
 .md th{background:var(--paper-2);font-weight:600;color:var(--ink)}
-.md img{max-width:100%;border-radius:6px;border:1px solid var(--rule)}
+.md img{max-width:100%;border-radius:6px;border:1px solid var(--rule);background:var(--paper-3)}
 .md hr{border:0;border-top:1px solid var(--rule);margin:18px 0}
 .md .task{list-style:none;margin-left:-18px}
 

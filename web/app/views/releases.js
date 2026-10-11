@@ -97,7 +97,7 @@
 '            <icon name="copy" :size="12"></icon></button>' +
 '        </div>' +
 '        <div class="card-pad" v-if="rel.body">' +
-'          <markdown :source="rel.body.length > 1400 ? rel.body.slice(0, 1400) + \'\\n\\n…\' : rel.body"></markdown>' +
+'          <markdown :source="rel.body.length > 1400 ? rel.body.slice(0, 1400) + \'\\n\\n…\' : rel.body" :owner="o" :repo="r"></markdown>' +
 '          <a v-if="rel.body.length > 1400" class="btn btn-sm" style="margin-top:8px" ' +
 '             :href="\'#/\' + full + \'/releases/\' + encodeURIComponent(rel.tag_name)">阅读全文</a></div>' +
 '        <div class="card-head" style="border-top:1px solid var(--rule);border-bottom:0;gap:12px;flex-wrap:wrap">' +
