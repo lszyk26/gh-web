@@ -107,27 +107,52 @@ fi
 
 # ---------- 7. 自检 ----------
 # 用 --resolve 强制打到本机，避免受 DNS/Cloudflare 缓存影响
-say "自检（--resolve $DOMAIN:443:127.0.0.1）"
-RES=(--resolve "$DOMAIN:443:127.0.0.1" -sk -o /dev/null -w '%{http_code}')
+sleep 2   # 平滑 reload 期间的竞态：不等一下，自检可能打到正在退场的旧 worker
+say "自检（全部强制 --resolve 到 127.0.0.1，绕开 DNS 与 CDN）"
+BASE=(--resolve "$DOMAIN:443:127.0.0.1" -sk)
+HDR=(awk 'tolower($1)=="x-ghw-cache:"{print $2}')
+OK=0; BAD=0
+chk() { # chk "说明" 实际值 期望值
+  if [[ "$2" == "$3" ]]; then printf '  %-22s %-6s ok\n' "$1" "$2"; OK=$((OK+1));
+  else printf '  %-22s %-6s 期望 %s\n' "$1" "$2" "$3"; BAD=$((BAD+1)); fi
+}
 
-CODE=$(curl "${RES[@]}" "https://$DOMAIN/" || echo 000)
-echo "  未鉴权访问首页        → ${CODE}   期望 401"
+CODE=$(curl "${BASE[@]}" -o /dev/null -w '%{http_code}' "https://$DOMAIN/" || echo 000)
+chk "未鉴权访问首页" "$CODE" "401"
 
 if [[ -n "${PW:-}" ]]; then
   AUTH=(-H "Authorization: Basic $(printf 'gh-web:%s' "$PW" | base64 -w0)")
-  C1=$(curl "${RES[@]}" "${AUTH[@]}" "https://$DOMAIN/" || echo 000)
-  echo "  带口令访问首页        → ${C1}   期望 200"
-  C2=$(curl "${RES[@]}" "${AUTH[@]}" "https://$DOMAIN/styles/main.css" || echo 000)
-  echo "  静态资源              → ${C2}   期望 200"
-  C3=$(curl "${RES[@]}" "${AUTH[@]}" "https://$DOMAIN/api/rate_limit" || echo 000)
-  echo "  缓存层 /api/          → ${C3}   期望 200"
-  # grep 可能无匹配（如鉴权失败），set -e 下必须兜住
-  A1=$(curl "${RES[@]}" "${AUTH[@]}" -D - "https://$DOMAIN/api/rate_limit" | tr -d '\r' | awk 'tolower($1)=="x-ghw-cache:"{print $2}' || true)
-  A2=$(curl "${RES[@]}" "${AUTH[@]}" -D - "https://$DOMAIN/api/rate_limit" | tr -d '\r' | awk 'tolower($1)=="x-ghw-cache:"{print $2}' || true)
-  echo "  缓存层 MISS→HIT       → ${A1:-?} → ${A2:-?}   期望 MISS → HIT"
+  # 静态资源（7 天强缓存）
+  C2=$(curl "${BASE[@]}" "${AUTH[@]}" -o /dev/null -w '%{http_code}' "https://$DOMAIN/styles/main.css" || echo 000)
+  chk "静态资源" "$C2" "200"
+  C3=$(curl "${BASE[@]}" "${AUTH[@]}" -o /dev/null -w '%{http_code}' "https://$DOMAIN/" || echo 000)
+  chk "带口令访问首页" "$C3" "200"
+  # SPA 深链接必须回退到 index.html
+  C4=$(curl "${BASE[@]}" "${AUTH[@]}" -o /dev/null -w '%{http_code}' "https://$DOMAIN/some/deep/link" || echo 000)
+  chk "SPA 深链接回退" "$C4" "200"
+  # 缓存层：用一次性参数强制冷启（每次都是新缓存键），验证 MISS → HIT
+  # 无需 token：rate_limit 匿名可读，能证明代理与缓存都在工作
+  PROBE="/api/rate_limit?_probe=$(date +%s)"
+  A1=$(curl "${BASE[@]}" "${AUTH[@]}" -D - -o /dev/null "https://$DOMAIN$PROBE" | tr -d '\r' | "${HDR[@]}" || true)
+  A2=$(curl "${BASE[@]}" "${AUTH[@]}" -D - -o /dev/null "https://$DOMAIN$PROBE" | tr -d '\r' | "${HDR[@]}" || true)
+  chk "缓存层首次(应回源)" "${A1:-无头}" "MISS"
+  chk "缓存层二次(应命中)" "${A2:-无头}" "HIT"
+  # 缓存键里绝不能出现凭证
+  if find /var/cache/nginx/gh-api -type f 2>/dev/null | head -1 | grep -q .; then
+    if grep -rl "$PW" /var/cache/nginx/gh-api 2>/dev/null | head -1 | grep -q .; then
+      printf '  %-22s %s\n' "缓存文件残留口令" "有问题"; BAD=$((BAD+1))
+    else
+      printf '  %-22s %-6s ok\n' "缓存文件无口令明文" "是"; OK=$((OK+1))
+    fi
+  fi
 else
-  echo "  （未生成新口令，跳过鉴权项；如需重置见下方提示）"
+  echo "  （口令文件已存在且未传入 GHWEB_PW，跳过鉴权相关项）"
+  echo "    想跑完整自检：GHWEB_PW='你的口令' bash $0"
 fi
+
+echo
+if [[ $BAD -eq 0 ]]; then say "自检通过（$OK 项）"
+else say "自检有 $BAD 项不符合预期，请检查上面的输出"; fi
 
 echo
 say "完成。打开 https://$DOMAIN/"
