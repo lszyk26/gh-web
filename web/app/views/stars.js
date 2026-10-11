@@ -100,7 +100,7 @@
 '        </div>' +
 '        <div class="row-side">' +
 '          <span class="stars"><icon name="star" :size="12"></icon>{{ U.compact(r.stargazers_count) }}</span>' +
-'          <span class="stars" style="color:var(--ink-4)"><icon name="fork" :size="12"></icon>{{ U.compact(r.forks_count) }}</span>' +
+'          <span class="stars u-fork" style="color:var(--ink-4)"><icon name="fork" :size="12"></icon>{{ U.compact(r.forks_count) }}</span>' +
 '          <button class="btn btn-sm btn-quiet" title="取消星标" @click="unstar(r, $event)">' +
 '            <icon name="starFill" :size="13" style="color:var(--warn)"></icon></button>' +
 '        </div>' +

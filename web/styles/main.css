@@ -363,8 +363,12 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
 .gh-mark{width:44px;height:44px;color:var(--paper)}
 
 .stat-inline{display:flex;gap:18px;flex-wrap:wrap}
-.stat-inline .s .n{font-family:var(--mono);font-size:15px;font-weight:500;letter-spacing:-.02em}
-.stat-inline .s .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+/* .s / .n / .l 在有的页面写成 <div>、有的写成 <span>。
+   这里统一 display:block，两种写法都能正确纵向排布
+   （否则行内元素会让「1,153」和「匹配项目」粘在一行）。 */
+.stat-inline .s{display:block}
+.stat-inline .s .n{display:block;font-family:var(--mono);font-size:15px;font-weight:500;letter-spacing:-.02em}
+.stat-inline .s .l{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--ink-4)}
 
 .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -427,4 +431,62 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
   .fade-enter-active,.fade-leave-active{transition:none}
   .view-enter-from,.view-leave-to,
   .fade-enter-from,.fade-leave-to{transform:none}
+}
+
+/* ============================================================
+   窄屏 / 手机适配
+   ------------------------------------------------------------
+   背景：列表行 .row 的右侧指标区 .row-side 是 flex:none（不收缩），
+   在窄屏上会把左侧标题挤到只剩一个字的宽度（显示成 "o…"），
+   描述也会被压成竖排。这里让指标区整体换行到第二行。
+   ============================================================ */
+
+/* ---------- 通用：任何宽度下都别让行内元素撑出横向滚动 ---------- */
+.row-main{min-width:0}
+.row-title .t{min-width:0}
+
+@media(max-width:680px){
+
+  /* ---- 列表行：右侧指标换行独占一行，标题重获完整宽度 ---- */
+  .row{flex-wrap:wrap;gap:9px 10px;padding:11px 12px}
+  .row-side{
+    flex:1 1 100%;        /* flex-basis 100% → 强制换到下一行 */
+    order:9;              /* 始终排在最后 */
+    justify-content:flex-start;
+    gap:15px;             /* 换行后横向间距给足，数字之间不黏 */
+    margin-top:1px;
+  }
+  /* 手机上标题允许折行：仓库名普遍较长，省略号会丢信息 */
+  .row-title .t{white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word}
+  .row-title{align-items:flex-start}
+  .row-meta{gap:8px}
+  .rank{padding-top:1px;min-width:19px}
+
+  /* ---- 页面留白与标题 ---- */
+  .content{padding:14px 12px}
+  h1{font-size:20px}
+  .stat-inline{gap:15px}
+  .card-head{padding:10px 12px;gap:8px}
+  .card-body{padding:12px}
+  .card-pad{padding:12px}
+
+  /* ---- 分段控件（今日/本周…、新晋/活跃）在手机上收窄，避免换行太碎 ---- */
+  .seg > button{padding:0 9px;height:27px;font-size:11.5px}
+
+  /* ---- 详情页两栏指标：手机上让标签与值同宽对齐 ---- */
+  .kv{font-size:12px}
+  .kv .k{min-width:66px}
+
+  /* ---- 代码块在手机上字号略收，减少横向滚动 ---- */
+  table.code{font-size:11.5px}
+  .diff{font-size:11.5px}
+  .diff-line .g{width:44px;padding-right:8px}
+}
+
+@media(max-width:420px){
+  /* 更窄的屏：把「复刻数」这类次要指标收掉，进一步腾出空间 */
+  .row-side .u-fork{display:none}
+  .row-side{gap:13px}
+  .stat-inline{gap:12px}
+  .content{padding:12px 10px}
 }

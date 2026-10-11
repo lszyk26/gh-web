@@ -134,7 +134,7 @@
 '        </div>' +
 '        <div class="row-side" style="gap:12px">' +
 '          <span class="stars" :title="U.num(r.stargazers_count) + \' 星标\'"><icon name="star" :size="12"></icon>{{ U.compact(r.stargazers_count) }}</span>' +
-'          <span class="stars" :title="U.num(r.forks_count) + \' 复刻\'" style="color:var(--ink-4)">' +
+'          <span class="stars u-fork" :title="U.num(r.forks_count) + \' 复刻\'" style="color:var(--ink-4)">' +
 '            <icon name="fork" :size="12"></icon>{{ U.compact(r.forks_count) }}</span>' +
 '          <span class="nowrap" style="min-width:46px;text-align:right" :title="U.abs(r.pushed_at)">' +
 '            {{ U.rel(r.pushed_at) }}</span>' +
