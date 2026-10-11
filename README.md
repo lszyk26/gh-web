@@ -119,6 +119,45 @@ Actions 实时日志流、Codespaces、Copilot、Discussions、Projects、Market
 
 ---
 
+## 移动端适配
+
+### ⚠️ 列表行的坑（最容易踩）
+
+`.row-side`（星标/复刻/时间/按钮）是 `flex:none`（**不收缩**）。在窄屏上它会把左侧
+`.row-main` 挤到只剩一个字的宽度 —— 表现为仓库名显示成 `o…`、`s…`，描述被压成竖排。
+
+修法在 `@media(max-width:680px)`：让 `.row-side` **整体换行**到第二行：
+
+```css
+.row{flex-wrap:wrap}
+.row-side{flex:1 1 100%; order:9; justify-content:flex-start}
+```
+
+同时手机上标题改为允许折行（`white-space:normal`），因为仓库名普遍较长，
+用省略号会丢信息。`@media(max-width:420px)` 再隐藏「复刻数」（`.u-fork`）。
+
+**新增任何列表页时，务必复用 `.row` / `.row-main` / `.row-side` 这套结构**，
+否则会重新踩这个坑。
+
+### `.stat-inline` 的行内/块级差异
+
+`.stat-inline .s .n` / `.l` 必须纵向排列。但有的页面写成 `<div class="s">`、
+有的写成 `<span class="s">` —— 行内元素不会换行，会让「1,153」和「匹配项目」粘在一起。
+CSS 里已统一加 `display:block`，两种写法都正确。
+
+### 顶栏
+
+手机上用 `.hide-sm` 隐藏次要读数（缓存命中率、额度条），只留面包屑与刷新按钮，
+避免一行塞太多东西。
+
+### 测试
+
+`tests/mobile-check.js` 把视口固定为 **375px**（iPhone SE/12 mini 级）渲染
+`#/trends`、`#/repos`、`#/`，断言列表行结构完整。这是**回归测试**：
+改列表行结构或 CSS 后被挤压会立刻暴露。
+
+---
+
 ## 登录：一次输入，一年免密
 
 **不再每次弹浏览器密码框。** 访问 `https://ghs.0lt.top/` 会跳到本站登录页，

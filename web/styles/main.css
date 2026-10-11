@@ -490,3 +490,17 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
   .stat-inline{gap:12px}
   .content{padding:12px 10px}
 }
+
+/* ---------- 热门页筛选栏：手机上让语言下拉独占一行，右侧对齐刷新按钮 ---------- */
+@media(max-width:680px){
+  .sel-lang{flex:1 1 100%;min-width:0}
+  .btn-refresh{margin-left:auto}
+}
+
+/* ---------- 顶栏：手机上隐藏次要读数（缓存命中率、额度条），
+   只留面包屑与刷新，避免一行塞太多东西 ---------- */
+@media(max-width:680px){
+  .hide-sm{display:none !important}
+  .topbar{padding:0 14px;gap:9px}
+  .crumb{font-size:12.5px}
+}

@@ -340,10 +340,10 @@
   '          </template>' +
   '        </div>' +
   '        <div class="topbar-spacer"></div>' +
-  '        <span class="mono" v-if="cacheRate !== null" style="font-size:10.5px;color:var(--ink-4)" ' +
+  '        <span class="mono hide-sm" v-if="cacheRate !== null" style="font-size:10.5px;color:var(--ink-4)" ' +
   '              :title="\'本次会话缓存命中 \' + cache.hit + \' / \' + (cache.hit + cache.miss) + \' 次请求\'">' +
   '          cache {{ cacheRate }}%</span>' +
-  '        <span v-if="rate" style="display:flex;align-items:center;gap:6px" ' +
+  '        <span v-if="rate" class="hide-sm" style="display:flex;align-items:center;gap:6px" ' +
   '              :title="\'API 额度 \' + rate.remaining + \'/\' + rate.limit + \'，重置于 \' + new Date(rate.reset).toLocaleTimeString()">' +
   '          <span class="bar" style="width:34px">' +
   '            <i :style="{width: ratePct + \'%\', background: ratePct < 15 ? \'var(--alarm)\' : \'var(--ink-3)\'}"></i>' +

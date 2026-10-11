@@ -190,12 +190,12 @@
 '        <button :class="{on: mode === \'created\'}" @click="setMode(\'created\')">新晋</button>' +
 '        <button :class="{on: mode === \'active\'}" @click="setMode(\'active\')">活跃</button>' +
 '      </span>' +
-'      <select class="input" style="width:auto;min-width:132px" v-model="lang" @change="onLang">' +
+'      <select class="input sel-lang" style="width:auto;min-width:132px" v-model="lang" @change="onLang">' +
 '        <option value="">全部语言</option>' +
 '        <option v-for="l in langOptions" :key="l" :value="l">{{ l }}</option>' +
 '      </select>' +
 '      <span style="flex:1"></span>' +
-'      <button class="btn btn-sm btn-quiet" :disabled="loading" @click="load(page)" title="重新拉取">' +
+'      <button class="btn btn-sm btn-quiet btn-refresh" :disabled="loading" @click="load(page)" title="重新拉取">' +
 '        <icon name="refresh" :size="13"></icon></button>' +
 '    </div>' +
 '    <div class="card-pad" style="padding-top:9px;padding-bottom:9px;border-bottom:1px solid var(--rule)">' +
