@@ -119,6 +119,41 @@ Actions 实时日志流、Codespaces、Copilot、Discussions、Projects、Market
 
 ---
 
+## 热门项目页（`#/trends`）
+
+GitHub **没有**官方的 trending 接口（github.com/trending 是网页端私有渲染，无 API）。
+本页用**搜索语法近似**，与 gh-mcp 的 `gh_trending` 同源但做了两处修正：
+
+| 模式 | 搜索式 | 排序 |
+|---|---|---|
+| 新晋 | `created:>=<窗> stars:>=N fork:false archived:false` | 星标 |
+| 活跃 | `pushed:>=<窗> stars:>=N fork:false archived:false` | 最近更新 |
+
+时间窗：今日 / 本周(7d) / 本月(30d) / 近 90 天。星标门槛：新晋 5/20/50/100，活跃 300/300/150/80。
+
+### ⚠️ 两个必须记住的坑（都实测过）
+
+1. **不能用 `stars:<=N` 收窄**。GitHub 搜索不认这个语法，会把它当成**普通文本词**去匹配——
+   结果是**暴涨**而不是收窄（实测 11 万 → 3.4 亿，巨头照旧霸榜）。
+   正确的区间写法是 `stars:a..b`。
+
+2. **「活跃」不能写成 `created:>=窗 + pushed:>=窗`**。时间窗内新建的仓库，其推送时间必然也落在窗内，
+   条件完全冗余——实测结果与「新晋」一字不差（都是 1151 条）。
+   真正的「活跃」应只看 `pushed:>=窗`（不限创建时间），再配星标门槛滤掉索引/机器人仓库，
+   并按 `sort=updated` 排序，榜单才有新鲜感。
+
+### 限流
+
+搜索接口限流单独计算且严格（未登录约 10 次/分，登录后约 30 次/分），
+**远低于**其余接口的 5000 次/小时。因此本页：
+
+- 不做自动轮询；
+- 切换筛选即发一次请求（每次都是新的搜索式，`noMem` 不走内存缓存）；
+- nginx 的 `proxy_cache` 对相同搜索式仍有效（二次请求 `x-ghw-cache: HIT`）；
+- 命中 403/429 时，页面上会给出「等一分钟再试」的明确提示，而不是抛 HTTP 403。
+
+---
+
 ## 备份
 
 `/opt/gh-web` 已登记进 `ssh-git-autosync`，每 5 分钟镜像到私有仓 `lszyk26/gh-web`（`node_modules` 除外）。nginx 配置、htpasswd 随 `server-secrets-backup` 的 AES-256 加密包一起走。

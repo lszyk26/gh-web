@@ -2,9 +2,18 @@
    views/trends.js — 今日 / 本周 / 本月 热门项目
    ------------------------------------------------------------
    GitHub 官方 API 没有 trending 端点，这里用搜索语法「模拟」：
-     新晋项目  created:>=<日期> + stars:>=N                  （新建且已涨粉）
-     活跃项目  created:>=<日期> + pushed:>=<日期> + stars:>=N  （新建且仍在推送）
-     两者都带 fork:false archived:false（滤掉 fork 与归档）
+     新晋项目  created:>=<日期> + stars:>=N    按星标排序
+                 → 时间窗内新建、已经快速涨粉的（含已沉寂的）
+     活跃项目  pushed:>=<日期> + stars:>=N     按「最近更新」排序
+                 → 不管哪年建的，只要时间窗内还在推送就上榜，
+                   再配星标门槛滤掉纯索引/机器人仓库
+     两者都带 fork:false archived:false
+
+   ⚠️ 两个坑（都实测过）：
+     1. 不能用 stars:<=N 收窄 —— GitHub 不认这个语法，会当成普通文本词匹配，
+        结果不是收窄而是暴涨（实测 11 万 → 3.4 亿）。要用区间 stars:a..b。
+     2. 「活跃」不能混用 created:>=窗 + pushed:>=窗 —— 时间窗内新建的仓库
+        推送时间必然也在窗内，条件完全冗余，结果与「新晋」一模一样。
    时间窗用本地日期算，格式 YYYY-MM-DD（GitHub 搜索要求）。
    注意：搜索接口限流较严（约 30 次/分钟），因此本页不做自动轮询。
    ============================================================ */
@@ -22,10 +31,10 @@
   ];
 
   const PERIODS = [
-    { k: 'today', label: '今日', days: 0, min: 5 },
-    { k: 'week', label: '本周', days: 7, min: 20 },
-    { k: 'month', label: '本月', days: 30, min: 50 },
-    { k: '90d', label: '近 90 天', days: 90, min: 100 }
+    { k: 'today', label: '今日', days: 0, min: 5, actMin: 300 },
+    { k: 'week', label: '本周', days: 7, min: 20, actMin: 300 },
+    { k: 'month', label: '本月', days: 30, min: 50, actMin: 150 },
+    { k: '90d', label: '近 90 天', days: 90, min: 100, actMin: 80 }
   ];
 
   function isoDaysAgo(days) {
@@ -63,8 +72,8 @@
       },
       sub: function () {
         return this.mode === 'active'
-          ? '时间窗内新建、且至今仍在持续推送的项目——比「新晋」更看活跃度'
-          : '时间窗内新建、且已快速积累星标的项目（含已沉寂的）';
+          ? '时间窗内仍在推送的项目，按最近更新排序——不管它是哪年建的'
+          : '时间窗内新建、且已快速积累星标的项目，按星标排序';
       },
       headline: function () {
         if (this.err) return '热门项目';
@@ -88,14 +97,16 @@
         const days = this.curPeriod.days;
         const since = isoDaysAgo(days);
         const bits = [];
-        // 两个模式都以「时间窗内新建」为基准：
-        //   新晋 → 只看涨粉（最近冒出来、已经积累了星标）
-        //   活跃 → 额外要求时间窗内仍有推送（真在推进，而不是建完就僵尸）
-        // 注意：不要用 stars:<=N 收窄 —— GitHub 不认这个语法，会把它当普通
-        //       文本词匹配，结果暴涨（实测 11 万 -> 3.4 亿）。要用区间 stars:a..b。
-        bits.push('created:>=' + since);
-        if (this.mode === 'active') bits.push('pushed:>=' + since);
-        bits.push('stars:>=' + this.curPeriod.min);
+        if (this.mode === 'active') {
+          // 「活跃」= 时间窗内仍在推送，不限创建时间；配星标门槛滤掉
+          // 索引仓/机器人仓，并按「最近更新」排序，榜单每次都有新鲜感。
+          bits.push('pushed:>=' + since);
+          bits.push('stars:>=' + this.curPeriod.actMin);
+        } else {
+          // 「新晋」= 时间窗内新建 + 已涨粉，按星标排序。
+          bits.push('created:>=' + since);
+          bits.push('stars:>=' + this.curPeriod.min);
+        }
         bits.push('fork:false');
         bits.push('archived:false');
         if (this.lang) bits.push('language:' + this.lang);
@@ -107,7 +118,7 @@
         const built = this.buildQuery();
         self.query = built.q; self.since = built.since;
         try {
-          const r = await API.searchRepos(built.q, p, 'stars');
+          const r = await API.searchRepos(built.q, p, this.mode === 'active' ? 'updated' : 'stars');
           self.items = (r.data && r.data.items) || [];
           self.total = (r.data && r.data.total_count) || 0;
           self.page = p;
