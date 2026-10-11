@@ -10,7 +10,9 @@ set -euo pipefail
 ROOT=/opt/gh-web
 WEB=$ROOT/web
 CONF_SRC=$ROOT/deploy/gh-web.conf
-CONF_DST=/etc/nginx/conf.d/gh-web.conf
+# 必须以 zz- 开头：nginx 按字母序加载 conf.d，第一个 listen 80 的
+# server 会成为默认服务器。用 zz- 排到最后，才不会接管未知 Host。
+CONF_DST=/etc/nginx/conf.d/zz-gh-web.conf
 CACHE_DIR=/var/cache/nginx/gh-api
 HTPASSWD=/etc/nginx/.ghweb.htpasswd
 DOMAIN=gh.0lt.top
