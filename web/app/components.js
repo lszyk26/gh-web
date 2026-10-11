@@ -124,11 +124,13 @@
   const Markdown = {
     // 除 source 外，把「这份 Markdown 属于哪个仓库的哪个分支」也传进来：
     // 相对路径图片要靠它换算成 raw 绝对地址（见 U.resolveImgSrc）
-    props: { source: String, owner: String, repo: String, ref: String },
+    // 注意：不能用 ref 当 prop 名 —— ref 是 Vue 的保留属性（模板引用），
+    // 写在组件上不会作为 prop 传进去，只会静默丢失。所以这里叫 branch。
+    props: { source: String, owner: String, repo: String, branch: String },
     computed: {
       html: function () {
         // 先设上下文再解析，保证 U.rewriteImg 拿得到仓库信息
-        U.imgContext(this.owner, this.repo, this.ref);
+        U.imgContext(this.owner, this.repo, this.branch);
         let h = U.md(this.source || '');
         // make gh issue refs / user mentions quieter links
         h = h.replace(/<a href="(https?:\/\/[^"]+)"/g, '<a target="_blank" rel="noopener noreferrer" href="$1"');

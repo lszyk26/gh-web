@@ -82,7 +82,7 @@ function fixture(pathname, params) {
   if (/\/gists/.test(pathname)) return enc([]);
   if (/\/repos\/[^/]+\/[^/]+\/languages/.test(pathname)) return enc({ JavaScript: 12000, CSS: 3000, Shell: 200 });
   if (/\/repos\/[^/]+\/[^/]+\/contributors/.test(pathname)) return enc([user('dev')]);
-  if (/\/repos\/[^/]+\/[^/]+\/readme/.test(pathname)) return enc({ content: Buffer.from('# Hello\n\n这是 README 的一段说明。\n\n```js\nvar a=1\n```').toString('base64'), encoding: 'base64' });
+  if (/\/repos\/[^/]+\/[^/]+\/readme/.test(pathname)) return enc({ content: Buffer.from('# Hello\n\n这是 README 的一段说明。\n\n<img src="assets/showcase/hero.png" alt="h" />\n\n![](img/cover.png)\n\n```js\nvar a=1\n```').toString('base64'), encoding: 'base64' });
   if (/\/repos\/[^/]+\/[^/]+\/branches\/[^/]+$/.test(pathname)) return enc({ name: 'main', commit: { sha: 'abc1234' }, protected: true });
   if (/\/repos\/[^/]+\/[^/]+\/branches/.test(pathname)) return enc([{ name: 'main', commit: { sha: 'abc1234' }, protected: true }, { name: 'dev', commit: { sha: 'def5678' } }]);
   if (/\/repos\/[^/]+\/[^/]+\/tags/.test(pathname)) return enc([{ name: 'v1.0.0', commit: { sha: 'abc1234', commit: { message: '稳定版发布' } } }]);
@@ -146,6 +146,9 @@ async function main() {
   w.console.error = (...a) => { const s = a.join(' '); if (!noise.test(s)) errors.push(s); };
   console.warn = w.console.warn; console.error = w.console.error;
   w.scrollTo = () => { };
+  // jsdom 的 window 不带 TextDecoder：repo.js 用它解 base64 README，
+  // 缺了会 catch 成空串 → 静默落到「没有 README」空状态，测试却看不出来
+  w.TextDecoder = w.TextDecoder || global.TextDecoder;
   w.addEventListener('error', (e) => { errors.push('window.onerror: ' + (e.message || e.error)); });
 
   // jsdom 的 localStorage 是只读访问器：必须直接写它，不能重新赋值
@@ -192,7 +195,7 @@ async function main() {
     '#/trends?period=today&mode=active&lang=Go': ['发现', '搜索式', 'language:Go'],
     '#/settings': ['访问凭证', '接口额度', '缓存'],
     '#/users/lszyk26': ['正在关注', '获得星标'],
-    '#/lszyk26/gh-mcp': ['README', '语言', '贡献者'],
+    '#/lszyk26/gh-mcp': ['README', '语言', '贡献者', 'raw.githubusercontent.com/lszyk26/gh-mcp'],
     '#/lszyk26/gh-mcp/code/tree/main': ['package.json', 'README.md'],
     '#/lszyk26/gh-mcp/code/blob/main/README.md': ['README.md'],
     '#/lszyk26/gh-mcp/issues': ['议题', '示例议题 1'],

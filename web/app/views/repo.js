@@ -196,7 +196,7 @@
 '            <span v-if="lastCommit" class="dimmer xs mono nowrap">' +
 '              {{ (lastCommit.sha || "").slice(0, 7) }} · <rel-time :iso="lastCommit.commit.author.date"></rel-time></span>' +
 '          </div>' +
-'          <div class="card-body" v-if="readme"><markdown :source="readme" :owner="o" :repo="r"></markdown>' +
+'          <div class="card-body" v-if="readme"><markdown :source="readme" :owner="o" :repo="r" :branch="(repo && repo.default_branch) || \'HEAD\'"></markdown>' +
 '            <p class="dimmer xs" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--rule)">' +
 '              README.md · 渲染自仓库默认分支</p></div>' +
 '          <div v-else-if="readmeLoading" class="card-body" style="display:flex;flex-direction:column;gap:10px">' +
