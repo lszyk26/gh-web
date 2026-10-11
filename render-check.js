@@ -76,7 +76,8 @@ function fixture(pathname, params) {
   if (/^\/search\/issues/.test(pathname)) return enc({ total_count: 2, incomplete_results: false, items: [issue(1, false), issue(2, true)] });
   if (/^\/search\/commits/.test(pathname)) return enc({ total_count: 1, incomplete_results: false, items: [{ sha: 'abc', repository: { full_name: 'a/b' }, commit: { message: 'x', author: { name: 'd', date: new Date().toISOString() } }, author: user('d') }] });
   if (/^\/search\/users/.test(pathname)) return enc({ total_count: 1, incomplete_results: false, items: [{ login: 'vuejs', id: 3, avatar_url: '', type: 'Organization' }] });
-  if (/\/users\//.test(pathname)) return enc(user(pathname.split('/').pop()));
+  if (/^\/users\/[^/]+\/repos/.test(pathname)) return enc([dummyRepo('vuejs', 'vue'), dummyRepo('vuejs', 'core')]);
+  if (/^\/users\/[^/]+$/.test(pathname)) return enc(user(pathname.split('/').pop()));
   if (/\/gists/.test(pathname)) return enc([]);
   if (/\/repos\/[^/]+\/[^/]+\/languages/.test(pathname)) return enc({ JavaScript: 12000, CSS: 3000, Shell: 200 });
   if (/\/repos\/[^/]+\/[^/]+\/contributors/.test(pathname)) return enc([user('dev')]);
@@ -102,7 +103,7 @@ function fixture(pathname, params) {
   if (/\/repos\/[^/]+\/[^/]+\/pulls\/\d+\/comments/.test(pathname)) return enc([comment(9)]);
   if (/\/repos\/[^/]+\/[^/]+\/pulls\/\d+$/.test(pathname)) return enc(pr(12));
   if (/\/repos\/[^/]+\/[^/]+\/pulls/.test(pathname)) return enc([pr(12), pr(13)]);
-  if (/\/repos\/[^/]+\/[^/]+\/releases\/tags\//.test(pathname)) return { data: Object.assign({ id: 5 }, releaseBody()), status: 200, cache: 'MISS', headers: {} };
+  if (/\/repos\/[^/]+\/[^/]+\/releases\/tags\//.test(pathname)) return enc(releaseBody());
   if (/\/repos\/[^/]+\/[^/]+\/releases\/\d+\/assets/.test(pathname)) return enc([{ id: 1, name: 'app.zip', size: 123456, download_count: 42, content_type: 'application/zip', created_at: new Date().toISOString(), browser_download_url: '#' }]);
   if (/\/repos\/[^/]+\/[^/]+\/releases/.test(pathname)) return enc([releaseBody()]);
   if (/\/repos\/[^/]+\/[^/]+\/actions\/runs\/\d+\/jobs/.test(pathname)) return enc({ jobs: [{ id: 1, name: 'build', status: 'completed', conclusion: 'success', started_at: new Date().toISOString(), completed_at: new Date().toISOString(), runner_name: 'ubuntu-latest', steps: [{ name: 'checkout', status: 'completed', conclusion: 'success', started_at: new Date().toISOString(), completed_at: new Date().toISOString() }, { name: 'test', status: 'completed', conclusion: 'failure', started_at: new Date().toISOString(), completed_at: new Date().toISOString() }] }] });
@@ -180,6 +181,31 @@ async function main() {
   // 让视图里的 await 走完
   for (let i = 0; i < 12; i++) await new Promise(r => setTimeout(r, 120));
 
+  const EXPECT = {
+    '#/': ['工作台', '语言构成'],
+    '#/repos': ['我的仓库', 'lszyk26/gh-mcp'],
+    '#/stars': ['星标仓库'],
+    '#/notifications': ['通知', '有人提到了你'],
+    '#/search?q=test&type=repositories': ['搜索 GitHub', 'vuejs/core'],
+    '#/settings': ['访问凭证', '接口额度', '缓存'],
+    '#/users/lszyk26': ['正在关注', '获得星标'],
+    '#/lszyk26/gh-mcp': ['README', '语言', '贡献者'],
+    '#/lszyk26/gh-mcp/code/tree/main': ['package.json', 'README.md'],
+    '#/lszyk26/gh-mcp/code/blob/main/README.md': ['README.md'],
+    '#/lszyk26/gh-mcp/issues': ['议题', '示例议题 1'],
+    '#/lszyk26/gh-mcp/issues/3': ['发表评论', '动态'],
+    '#/lszyk26/gh-mcp/pulls': ['拉取请求', '示例议题 1'],
+    '#/lszyk26/gh-mcp/pulls/12': ['对话', '文件变更', '合并信息'],
+    '#/lszyk26/gh-mcp/commits': ['提交历史', 'feat:'],
+    '#/lszyk26/gh-mcp/commit/abc1234def': ['父提交', 'src/a.js'],
+    '#/lszyk26/gh-mcp/branches': ['分支与标签', 'main'],
+    '#/lszyk26/gh-mcp/releases': ['v1.0.0', '更新内容'],
+    '#/lszyk26/gh-mcp/releases/v1.0.0': ['附件', 'app.zip'],
+    '#/lszyk26/gh-mcp/actions': ['流水线', 'CI'],
+    '#/lszyk26/gh-mcp/actions/991': ['任务', 'build'],
+    '#/lszyk26/gh-mcp/compare/main...dev': ['比较', '领先']
+  };
+
   let pass = 0, fail = 0;
   for (const r of ROUTES) {
     const before = errors.length + warnings.length;
@@ -193,11 +219,16 @@ async function main() {
     const newMsgs = errors.length + warnings.length - before;
     const unresolved = /<[a-z]+-[a-z-]+/.test(htmlNow) ? (htmlNow.match(/<([a-z]+-[a-z0-9-]+)/g) || []).filter(t => !/^-?(div|span|svg|button|input|a)-/.test(t)).slice(0, 3) : [];
     const empty = htmlNow.length < 40;
-    if (newMsgs === 0 && !empty && unresolved.length === 0) {
-      pass++; console.log('  PASS  ' + r + '  (' + htmlNow.length + ' 字节)');
+    const want = EXPECT[r] || [];
+    const missing = want.filter(t => htmlNow.indexOf(t) < 0);
+    if (newMsgs === 0 && !empty && unresolved.length === 0 && missing.length === 0) {
+      pass++; console.log('  PASS  ' + r + '  (' + htmlNow.length + ' 字节, ' + want.length + ' 项断言)');
     } else {
       fail++;
-      console.log('  FAIL  ' + r + (empty ? '  [渲染为空]' : '') + (unresolved.length ? '  [未解析组件: ' + unresolved.join(',') + ']' : ''));
+      console.log('  FAIL  ' + r + (empty ? '  [渲染为空]' : '') +
+        (unresolved.length ? '  [未解析组件: ' + unresolved.join(',') + ']' : '') +
+        (missing.length ? '  [缺少内容: ' + missing.join(' / ') + ']' : '') +
+        (newMsgs ? '  [' + newMsgs + ' 条控制台输出]' : ''));
     }
   }
 

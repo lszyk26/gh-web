@@ -168,4 +168,6 @@
   };
 
   window.VIEWS.releases = Releases;
+  /* 同一个组件既渲染列表也渲染详情：路由名 release / releases 都指向它 */
+  window.VIEWS.release = Releases;
 })();
