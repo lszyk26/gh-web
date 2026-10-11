@@ -122,3 +122,50 @@ Actions 实时日志流、Codespaces、Copilot、Discussions、Projects、Market
 ## 备份
 
 `/opt/gh-web` 已登记进 `ssh-git-autosync`，每 5 分钟镜像到私有仓 `lszyk26/gh-web`（`node_modules` 除外）。nginx 配置、htpasswd 随 `server-secrets-backup` 的 AES-256 加密包一起走。
+
+---
+
+## 前端资源失效：`?v=` 版本号（改完必做）
+
+nginx 给 js/css/字体发的是 `Cache-Control: public, max-age=604800, immutable`（7 天强缓存），
+浏览器在这 7 天内**不会回源校验**。所以**改完 `web/` 下的任何文件后必须递增版本号**：
+
+```bash
+bash /opt/gh-web/deploy/bump.sh          # 用时间戳
+bash /opt/gh-web/deploy/bump.sh 20261011d  # 或指定
+```
+
+`bump.sh` 会把 `index.html` 里全部 `?v=<旧版本>` 换成新版本，浏览器随即重新拉取所有前端资源。
+静态文件由 nginx 直接从磁盘读取，**不需要 reload**。
+
+> 历史教训：首版给资源发了 `immutable` 却没有版本号，改完前端后浏览器一直用旧 JS，
+> 出现「图标不显示 / 过渡动画消失 / 新旧代码混用」等诡异现象，且极难排查。
+
+---
+
+## 已知的「多根模板」与过渡
+
+`run / commit / compare / issue / pull / user` 这 6 个详情页的模板是
+`v-if 加载态` / `v-else-if 错误态` / `v-else 正文` 三个并列根。
+
+Vue 的 `<transition>` 要求直接子节点**单根**，否则过渡会**静默失效**（生产版无告警）。
+因此 `app.js` 里过渡内套了一层单根 `.view-host` 作为 carrier，内层组件根节点数不再影响过渡。
+
+`tests/root-check.js` 会列出当前的多根视图清单，便于日后新增页面时留意。
+（该脚本只作提示，恒返回 0 —— 有 carrier 层兜底，多根本身不影响功能。）
+
+---
+
+## 测试
+
+```bash
+node /opt/gh-web/tests/compile-check.js   # 38 个模板语法
+node /opt/gh-web/tests/render-check.js    # jsdom 跑 22 条路由 + 内容断言
+node /opt/gh-web/tests/root-check.js      # 多根视图清单
+```
+
+`render-check.js` 会从 `app/views/` **读目录**加载脚本，所以它无法发现
+「`index.html` 漏引某个 view」这类问题。历史上 `views/user.js` 就漏引过，
+导致用户主页错落成概览页。**新增视图后请确认 `index.html` 里也加了对应的 `<script>`。**
+（对照命令：`diff <(grep -oE 'app/views/[a-z]+\.js' web/index.html | sed 's|.*/||' | sort) <(ls web/app/views/*.js | sed 's|.*/||' | sort)`）
+
