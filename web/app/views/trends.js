@@ -63,7 +63,7 @@
       },
       sub: function () {
         return this.mode === 'active'
-          ? '近期仍在活跃推进的高星项目（按星标排序）'
+          ? '近期仍在推进的中型项目（已排除超大仓库，否则榜单永远是那几个巨头霸榜）'
           : '最近新建、且已快速积累星标的项目';
       },
       headline: function () {
@@ -88,9 +88,17 @@
         const days = this.curPeriod.days;
         const since = isoDaysAgo(days);
         const bits = [];
-        if (this.mode === 'active') bits.push('pushed:>=' + since);
-        else bits.push('created:>=' + since);
-        bits.push('stars:>=' + this.curPeriod.min);
+        if (this.mode === 'active') {
+          bits.push('pushed:>=' + since);
+          bits.push('stars:>=' + this.curPeriod.min);
+          // 关键：active 模式必须设星标上限。否则按星标排序时，
+          // freeCodeCamp / public-apis 这类几十万星、且每天都在推送的
+          // 巨型仓库会永久霸榜，"热门"就失去意义了。
+          bits.push('stars:<=30000');
+        } else {
+          bits.push('created:>=' + since);
+          bits.push('stars:>=' + this.curPeriod.min);
+        }
         bits.push('fork:false');
         bits.push('archived:false');
         if (this.lang) bits.push('language:' + this.lang);
