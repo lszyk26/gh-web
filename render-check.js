@@ -139,9 +139,12 @@ async function main() {
   w.matchMedia = w.matchMedia || (() => ({ matches: false, addListener() { }, removeListener() { } }));
 
   const warnings = [], errors = [];
-  w.console.warn = (...a) => warnings.push(a.join(' '));
-  w.console.error = (...a) => errors.push(a.join(' '));
+  const noise = /Not implemented|Error: Uncaught \[/;
+  w.console.warn = (...a) => { const s = a.join(' '); if (!noise.test(s)) warnings.push(s); };
+  w.console.error = (...a) => { const s = a.join(' '); if (!noise.test(s)) errors.push(s); };
   console.warn = w.console.warn; console.error = w.console.error;
+  w.scrollTo = () => { };
+  w.addEventListener('error', (e) => { errors.push('window.onerror: ' + (e.message || e.error)); });
 
   // localStorage 假实现（app 会用它存 token）
   const store = {};
