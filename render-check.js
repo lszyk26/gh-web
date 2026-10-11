@@ -146,16 +146,8 @@ async function main() {
   w.scrollTo = () => { };
   w.addEventListener('error', (e) => { errors.push('window.onerror: ' + (e.message || e.error)); });
 
-  // localStorage 假实现（app 会用它存 token）
-  const store = {};
-  w.localStorage = {
-    getItem: (k) => (k in store ? store[k] : null),
-    setItem: (k, v) => { store[k] = String(v); },
-    removeItem: (k) => { delete store[k]; },
-    clear: () => { }
-  };
-  Object.keys(store).forEach(() => { });
-  store['ghw.pat'] = JSON.stringify('ghp_faketoken_for_render_check_0123456789');
+  // jsdom 的 localStorage 是只读访问器：必须直接写它，不能重新赋值
+  w.localStorage.setItem('ghw.pat', JSON.stringify('ghp_faketoken_for_render_check_0123456789'));
 
   // 假 fetch：把 /api/xxx 交给 fixture
   w.fetch = async (url, init) => {

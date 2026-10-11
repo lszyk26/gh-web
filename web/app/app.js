@@ -369,6 +369,10 @@
     const app = Vue.createApp(App);
     // 全局注册，保证任何组件模板里都能解析到这些原语
     Object.keys(window.C).forEach(function (k) { app.component(k, window.C[k]); });
+    // 模板里要用到的工具（Vue 只放行 Math/Date/JSON 等内置全局）
+    app.config.globalProperties.U = window.U;
+    app.config.globalProperties.API = window.API;
+    app.config.globalProperties.hljs = window.hljs;
     app.config.errorHandler = function (err, instance, info) {
       if (window.console) console.error('[gh-web]', info, err);
     };
