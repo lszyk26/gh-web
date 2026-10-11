@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const ROOT = '/opt/gh-web/web';
+const ROOT = require('path').join(__dirname, '..', 'web');
 const routes = process.argv.slice(2);
 const ROUTES = routes.length ? routes : [
   '#/', '#/repos', '#/stars', '#/notifications', '#/search?q=test&type=repositories',

@@ -6,7 +6,7 @@ const path = require('path');
 const vm = require('vm');
 const { compile } = require('@vue/compiler-dom');
 
-const ROOT = '/opt/gh-web/web';
+const ROOT = require('path').join(__dirname, '..', 'web');
 
 function makeWindow() {
   const views = {};
