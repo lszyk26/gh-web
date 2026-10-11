@@ -386,3 +386,40 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
   .rail-scrim{position:fixed;inset:0;background:rgba(23,22,20,.35);z-index:140}
 }
 @media(min-width:901px){.rail-btn{display:none}.rail-scrim{display:none}}
+
+/* ============================================================
+   以下为本轮修复新增
+   ============================================================ */
+
+/* ---------- 头像 ----------
+   组件模板里用的是 .av / .av-fb，但此前 CSS 从未定义过这两个类，
+   导致头像没有宽度、也不参与 flex:none，在列表行里会被压扁甚至看不见。 */
+.av{width:24px;height:24px;object-fit:cover;border-radius:50%;flex:none;
+  display:inline-block;vertical-align:middle;background:var(--paper-3);
+  border:1px solid var(--rule-2)}
+.av-fb{display:grid;place-items:center;font-family:var(--mono);font-weight:500;
+  color:var(--ink-3);letter-spacing:.02em}
+
+/* ---------- 路由切换过渡（Vue <transition name="view">） ----------
+   此前视图切换是硬切，没有任何过渡。 */
+.content{position:relative}
+.view-enter-active,.view-leave-active{transition:opacity .22s ease,transform .22s ease}
+.view-enter-from{opacity:0;transform:translateY(7px)}
+.view-leave-to{opacity:0;transform:translateY(-5px)}
+/* out-in 模式：离场元素脱离文档流，避免两页同时占据布局造成跳动 */
+.view-leave-active{position:absolute;top:0;left:0;right:0;pointer-events:none}
+
+/* ---------- 下拉菜单过渡（Vue <transition name="fade">） ----------
+   components.js 里的 Dropdown 引用了 name="fade"，同样一直没有对应样式。 */
+.fade-enter-active,.fade-leave-active{transition:opacity .13s ease,transform .13s ease}
+.fade-enter-from,.fade-leave-to{opacity:0;transform:translateY(-4px)}
+
+/* ---------- 尊重「减少动态效果」偏好 ---------- */
+@media(prefers-reduced-motion:reduce){
+  .skel,.toast{animation:none}
+  .spin{animation-duration:1.5s}
+  .view-enter-active,.view-leave-active,
+  .fade-enter-active,.fade-leave-active{transition:none}
+  .view-enter-from,.view-leave-to,
+  .fade-enter-from,.fade-leave-to{transform:none}
+}

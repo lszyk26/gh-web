@@ -347,8 +347,10 @@
   '          <icon name="refresh" :size="14"></icon></button>' +
   '      </header>' +
   '      <main class="content">' +
-  '        <component :is="viewComp" :key="viewKey" :route="route" :shell="shellSelf" ' +
-  '                   @nav="go" @cache="noteCache"></component>' +
+  '        <transition name="view" mode="out-in">' +
+  '          <component :is="viewComp" :key="viewKey" :route="route" :shell="shellSelf" ' +
+  '                     @nav="go" @cache="noteCache"></component>' +
+  '        </transition>' +
   '      </main>' +
   '    </div>' +
   '  </template>' +
