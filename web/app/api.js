@@ -9,8 +9,24 @@
   const KEY = 'pat';
   const BASE = '/api';
 
+  /* 缓存命名空间：不能用原始 token —— nginx 会把 key 明文写进缓存文件。
+     这里用 FNV-1a 双路摘要（不可逆、非机密），只用于把不同凭证的缓存分开。 */
+  function bucketOf(t) {
+    if (!t) return 'anon';
+    let h1 = 0x811c9dc5 >>> 0, h2 = 0x01000193 >>> 0;
+    for (let i = 0; i < t.length; i++) {
+      const c = t.charCodeAt(i);
+      h1 = (h1 ^ c) >>> 0;
+      h1 = Math.imul(h1, 0x01000193) >>> 0;
+      h2 = (h2 + Math.imul((c ^ 0x5bf03635) >>> 0, 0x9e3779b1)) >>> 0;
+    }
+    const hex = function (n) { return ('00000000' + (n >>> 0).toString(16)).slice(-8); };
+    return hex(h1) + hex(h2);
+  }
+
   const API = {
     token: null,
+    bucket: 'anon',
     cacheHits: 0,
     cacheMisses: 0,
     onRate: null,
@@ -20,10 +36,12 @@
   /* ---------- token ---------- */
   API.loadToken = function () {
     API.token = U.store.get(KEY, null);
+    API.bucket = bucketOf(API.token);
     return API.token;
   };
   API.setToken = function (t) {
     API.token = t ? String(t).trim() : null;
+    API.bucket = bucketOf(API.token);
     if (API.token) U.store.set(KEY, API.token);
     else U.store.del(KEY);
   };
@@ -49,6 +67,8 @@
     // 注意：不能用 Authorization 头传 PAT —— 那会和 nginx 的 basic auth 抢同一个头，
     // 结果 basic auth 直接把请求拒掉。所以走自定义头，由 nginx 翻成 Bearer 转发给 GitHub。
     if (API.token) headers['X-GH-Token'] = API.token;
+    // 缓存命名空间用摘要，原始 token 绝不进入缓存键（否则会明文落盘）
+    headers['X-GH-Cache-Bucket'] = API.bucket || 'anon';
     if (opts.headers) Object.keys(opts.headers).forEach(function (k) { headers[k] = opts.headers[k]; });
 
     const init = { method: opts.method || 'GET', headers: headers };
