@@ -19,7 +19,12 @@ GitHub 的高速只读镜像。跑在自己的服务器上，只为一个人服�
 | 内存缓存 + 请求去重 | 同一份数据在一次会话里只回源一次 |
 | 只渲染可见内容 | 大文件、二进制、超长 diff 都有降级处理 |
 
-缓存层还做了两件事：按 token 分桶（`proxy_cache_key` 里含 `Authorization`），以及显式忽略 GitHub 返回的 `Cache-Control: private`——不忽略的话什么都缓存不上。
+缓存层有三个容易踩的坑，都已处理：
+
+1. **不能直接收 `Authorization` 头**。浏览器发 `Authorization: Bearer <PAT>`，而站点的 basic auth 也用这个头——nginx 会先拿它去做口令校验，请求直接被 401 拒掉。所以前端改发自定义头 `X-GH-Token`，由 nginx 翻成 `Bearer` 转发给 GitHub。
+2. **缓存键里不能放原始 token**。nginx 会把缓存键明文写进磁盘上的缓存文件（`KEY: gh|ghp_xxx|GET|/user`）。前端先在本地算一个不可逆摘要（FNV-1a 双路，16 个十六进制字符）放进 `X-GH-Cache-Bucket`，缓存键只用摘要。既能把不同凭证的缓存分开，又不留凭证。
+3. **必须显式忽略上游的 `Cache-Control: private`**。GitHub 的响应都带这个头，不忽略就什么都缓存不上。
+
 
 ---
 
@@ -47,7 +52,7 @@ GitHub 的高速只读镜像。跑在自己的服务器上，只为一个人服�
 │   └── vendor/              vue / highlight.js / marked（本地副本）
 ├── deploy/
 │   ├── gh-web.conf          nginx 站点配置（含缓存层）
-│   └── install.sh           幂等安装脚本
+│   └── install.sh           幂等安装脚本，装到 conf.d/zz-gh-web.conf
 └── tests/
     ├── compile-check.js     编译全部 37 个模板，抓模板语法错误
     └── render-check.js      jsdom 真跑 22 条路由 + 内容断言
@@ -75,6 +80,11 @@ sudo bash /opt/gh-web/deploy/install.sh --with-cert  # 首次签发证书
 幂等，可反复执行；覆盖 nginx 配置前会自动留 `.bak-install-<ts>`。
 
 DNS 需要一条 A 记录：`gh.0lt.top` → 本机公网 IP。**签发证书时必须灰云直连**，签完再考虑开橙云。
+
+> ⚠️ **站点配置文件名必须保持 `zz-` 前缀**（`/etc/nginx/conf.d/zz-gh-web.conf`）。
+> nginx 按 `conf.d` 字母序加载，**第一个**监听 80 端口的 `server` 会顺带成为该端口的默认服务器。
+> 若叫 `gh-web.conf`，它会抢在 `memhub.conf` 前面，接管所有未匹配的 Host——
+> 未知域名从原来的 404 变成 401，属于悄悄改变了既有站点的行为。`install.sh` 已按 `zz-` 命名安装。
 
 ## 测试
 
