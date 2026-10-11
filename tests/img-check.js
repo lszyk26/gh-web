@@ -50,7 +50,7 @@ ok('绝对地址不动', U.resolveImgSrc('https://example.com/a.png') === 'https
 ok('data: 不动', U.resolveImgSrc('data:image/png;base64,AAA') === 'data:image/png;base64,AAA');
 ok('锚点不动', U.resolveImgSrc('#x') === '#x');
 U.imgContext(null, null, null); // 清掉上下文，走兜底
-w.location.hash = '#/a/b';
+w.location.hash = '#/trends';
 ok('无上下文时退回 github.com/raw', U.resolveImgSrc('assets/a.png') === 'https://github.com/raw/assets/a.png',
   U.resolveImgSrc('assets/a.png'));
 

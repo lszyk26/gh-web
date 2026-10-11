@@ -201,8 +201,10 @@
   // 它不会为这类标签解析相对路径。
   let imgCtx = null;
 
+  // 传 owner+repo 即设置上下文；传空即清除（表示「这段 Markdown 不属于任何仓库」，
+  // 此时靠 ctxFromHash 兜底）。组件每次渲染都会调一次，所以上下文不会串到别处。
   U.imgContext = function (o, r, ref) {
-    if (o && r) imgCtx = { o: o, r: r, ref: ref || 'HEAD' };
+    imgCtx = (o && r) ? { o: o, r: r, ref: ref || 'HEAD' } : null;
     return imgCtx;
   };
 
