@@ -183,7 +183,7 @@ async function main() {
   for (let i = 0; i < 12; i++) await new Promise(r => setTimeout(r, 120));
 
   const EXPECT = {
-    '#/': ['工作台', '语言构成'],
+    '#/': ['工作台', '语言构成', '今日热门'],
     '#/repos': ['我的仓库', 'lszyk26/gh-mcp'],
     '#/stars': ['星标仓库'],
     '#/notifications': ['通知', '有人提到了你'],

@@ -119,6 +119,47 @@ Actions 实时日志流、Codespaces、Copilot、Discussions、Projects、Market
 
 ---
 
+## 登录：一次输入，一年免密
+
+**不再每次弹浏览器密码框。** 访问 `https://ghs.0lt.top/` 会跳到本站登录页，
+输入一次访问令牌 → 下发一个 **HttpOnly Cookie（有效期 1 年）**，之后自动登录。
+
+```
+访问令牌：[访问令牌已移除]     ← 与 basic auth 密码是两个不同的东西
+```
+
+### 实现（`/opt/ghweb-auth/`，纯标准库，监听 127.0.0.1:9093）
+
+| 接口 | 用途 |
+|---|---|
+| `/_verify` | 供 nginx `auth_request` 调用：Cookie 正确 204，否则 401 |
+| `/login` | 登录页；带 `?t=<令牌>` 正确则下发 Cookie 并 302 回首页 |
+| `/logout` | 清 Cookie |
+
+- Cookie 值 = `HMAC(secret, "ghw-session-v1")`，**不是令牌本身** —— 即使 Cookie 泄露也无法反推令牌。
+- **无状态**：不存会话，校验时现算现比；轮换 secret 即可让所有设备立即失效。
+- nginx 侧用 `satisfy any` 同时保留 `auth_request` 与 `auth_basic`：
+  **Cookie 或原密码任选其一都能进**，认证服务故障时不会被自己锁在门外。
+
+### 令牌轮换
+
+```bash
+bash /opt/gh-web/deploy/rotate.sh                 # 换令牌 + 换 secret（踢掉所有设备）
+bash /opt/gh-web/deploy/rotate.sh --keep-session  # 只换令牌，已登录设备不受影响
+```
+
+### ⚠️ 别把我锁在外面
+
+改这块配置时务必确认**两条路至少有一条通**：
+```bash
+curl -sk -o /dev/null -w '%{http_code}\n' -u "gh-web:<密码>" https://ghs.0lt.top/   # 期望 200
+curl -sk -o /dev/null -w '%{http_code}\n' https://ghs.0lt.top/login                 # 期望 200
+```
+`deploy/gh-web.conf` 里 `location @ghw_gate` 负责把未鉴权请求 302 到 `/login`
+（而不是像原来那样弹 401 原生密码框）。
+
+---
+
 ## 热门项目页（`#/trends`）
 
 GitHub **没有**官方的 trending 接口（github.com/trending 是网页端私有渲染，无 API）。
