@@ -374,7 +374,7 @@
     app.config.globalProperties.API = window.API;
     app.config.globalProperties.hljs = window.hljs;
     app.config.errorHandler = function (err, instance, info) {
-      if (window.console) console.error('[gh-web]', info, err);
+      if (window.console) console.error('[gh-web]', info, (err && err.stack) || err);
     };
     app.mount('#app');
   })();
