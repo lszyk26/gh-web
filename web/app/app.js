@@ -347,9 +347,16 @@
   '          <icon name="refresh" :size="14"></icon></button>' +
   '      </header>' +
   '      <main class="content">' +
+  /* 注意：<transition> 的直接子节点必须是「单根」。
+     而 run/commit/compare/issue/pull/user 这 6 个详情页模板是
+     v-if 加载态 / v-else-if 错误态 / v-else 正文 三个并列根，
+     直接套过渡会静默失效。所以这里插一层单根 div 作为 carrier：
+     内层组件根节点数量从此不再影响过渡是否生效。 */
   '        <transition name="view" mode="out-in">' +
-  '          <component :is="viewComp" :key="viewKey" :route="route" :shell="shellSelf" ' +
-  '                     @nav="go" @cache="noteCache"></component>' +
+  '          <div class="view-host" :key="viewKey">' +
+  '            <component :is="viewComp" :route="route" :shell="shellSelf" ' +
+  '                       @nav="go" @cache="noteCache"></component>' +
+  '          </div>' +
   '        </transition>' +
   '      </main>' +
   '    </div>' +
