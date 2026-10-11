@@ -189,7 +189,7 @@ async function main() {
     '#/notifications': ['通知', '有人提到了你'],
     '#/search?q=test&type=repositories': ['搜索 GitHub', 'vuejs/core'],
     '#/trends': ['发现', '全部语言', 'vuejs/core'],
-    '#/trends?period=today&mode=active&lang=Go': ['发现', '搜索式', 'created:>=|pushed:>='.replace('|', '')],
+    '#/trends?period=today&mode=active&lang=Go': ['发现', '搜索式', 'language:Go'],
     '#/settings': ['访问凭证', '接口额度', '缓存'],
     '#/users/lszyk26': ['正在关注', '获得星标'],
     '#/lszyk26/gh-mcp': ['README', '语言', '贡献者'],
