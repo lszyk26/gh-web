@@ -1,0 +1,11 @@
+.git
+.gitignore
+node_modules
+tests
+.baksnapshot-*
+*.bak*
+*.bak-*
+deploy
+README.md
+.env
+.env.*

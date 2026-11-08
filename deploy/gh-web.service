@@ -1,0 +1,39 @@
+# ============================================================
+# systemd 服务（服务器 / 树莓派 / 家里的小主机）
+#
+#   sudo cp deploy/gh-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now gh-web
+#   journalctl -u gh-web -f
+#
+# 配置写在 /opt/gh-web/.env（EnvironmentFile），权限建议 640。
+# ============================================================
+[Unit]
+Description=GH-WEB — GitHub 高速只读镜像
+Documentation=https://github.com/lszyk26/gh-web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/gh-web
+EnvironmentFile=-/opt/gh-web/.env
+ExecStart=/usr/bin/node /opt/gh-web/server.js
+Restart=always
+RestartSec=3
+User=www-data
+Group=www-data
+
+# 加固：只允许读，不允许写系统目录
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

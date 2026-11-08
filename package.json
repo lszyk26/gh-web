@@ -1,15 +1,41 @@
 {
   "name": "gh-web",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "1.1.0",
+  "description": "GitHub 的高速只读镜像：零依赖 Node 服务器 + 静态 SPA + API 缓存代理",
+  "main": "server.js",
+  "bin": {
+    "gh-web": "server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
+  "scripts": {
+    "start": "node server.js",
+    "serve": "node server.js",
+    "test": "node tests/compile-check.js && node tests/render-check.js && node tests/img-check.js && node tests/mobile-check.js",
+    "test:render": "node tests/render-check.js",
+    "bump": "bash deploy/bump.sh"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "github",
+    "mirror",
+    "proxy",
+    "cache",
+    "spa",
+    "vue",
+    "self-hosted"
+  ],
+  "author": "lszyk26",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lszyk26/gh-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lszyk26/gh-web/issues"
+  },
+  "homepage": "https://github.com/lszyk26/gh-web#readme",
+  "devDependencies": {
     "@vue/compiler-dom": "^3.5.13",
     "jsdom": "^24.1.3"
   }

@@ -1,0 +1,17 @@
+# ============================================================
+# docker compose up -d
+#   GHW_PASSWORD=你的口令 docker compose up -d
+#   （不设 GHW_PASSWORD 则不启用访问口令，公网部署务必设一个）
+# ============================================================
+services:
+  gh-web:
+    build: .
+    image: gh-web:latest
+    container_name: gh-web
+    ports:
+      - "${PORT:-8787}:8787"
+    environment:
+      GHW_PASSWORD: "${GHW_PASSWORD:-}"
+      GHW_CACHE_TTL: "${GHW_CACHE_TTL:-300}"
+      GHW_CACHE_MAX_MB: "${GHW_CACHE_MAX_MB:-128}"
+    restart: unless-stopped
