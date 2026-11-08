@@ -363,6 +363,8 @@
     const i = b.lastIndexOf('.');
     return i <= 0 ? '' : b.slice(i + 1).toLowerCase();
   };
+  // release 附件 / 源码快照走边缘下载加速：CF Worker 的 /dl/ 分支（cd /opt/cf-web-proxy）
+  U.dlUrl = function (u) { return u ? '/dl/' + encodeURIComponent(u) : ''; };
   U.rawUrl = function (owner, repo, ref, path) {
     return 'https://raw.githubusercontent.com/' + owner + '/' + repo + '/' + ref + '/' + path;
   };

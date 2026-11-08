@@ -20,6 +20,12 @@
       full: function () { return this.o + '/' + this.r; },
       tag: function () { return this.route.params.tag; },
       detail: function () { return this.route.name === 'release'; },
+      snapTag: function () {
+        return (this.single && this.single.tag_name) || this.tag || 'HEAD';
+      },
+      // 源码快照：github.com 的 archive 直链（302 由 Worker 跟随），再套一层边缘下载加速
+      zipSrc: function () { return U.dlUrl('https://github.com/' + this.full + '/archive/refs/tags/' + encodeURIComponent(this.snapTag) + '.zip'); },
+      tarSrc: function () { return U.dlUrl('https://github.com/' + this.full + '/archive/refs/tags/' + encodeURIComponent(this.snapTag) + '.tar.gz'); },
       totalDownloads: function () {
         let n = 0;
         (this.detail ? this.assets : []).forEach(function (a) { n += a.download_count || 0; });
@@ -138,7 +144,7 @@
 '        <icon name="package" :size="22"></icon><b>没有可下载的附件</b>' +
 '        <p>此发行版仅包含源码快照</p></div>' +
 '      <div v-else class="row-list">' +
-'        <a v-for="a in assets" :key="a.id" class="row" :href="a.browser_download_url" target="_blank" rel="noopener noreferrer">' +
+'        <a v-for="a in assets" :key="a.id" class="row" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
 '          <icon name="package" :size="15" style="color:var(--ink-4);margin-top:2px"></icon>' +
 '          <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:500">{{ a.name }}</span></div>' +
 '            <div class="row-meta"><span>{{ U.bytes(a.size) }}</span>' +
@@ -153,9 +159,9 @@
 '    <div class="card">' +
 '      <div class="card-head"><h3>源码</h3></div>' +
 '      <div class="card-pad" style="display:flex;gap:9px;flex-wrap:wrap">' +
-'        <a class="btn" :href="single.zipball_url" target="_blank" rel="noopener noreferrer">' +
+'        <a class="btn" :href="zipSrc" target="_blank" rel="noopener noreferrer">' +
 '          <icon name="download" :size="13"></icon>ZIP 快照</a>' +
-'        <a class="btn" :href="single.tarball_url" target="_blank" rel="noopener noreferrer">' +
+'        <a class="btn" :href="tarSrc" target="_blank" rel="noopener noreferrer">' +
 '          <icon name="download" :size="13"></icon>TAR.GZ 快照</a>' +
 '        <a class="btn" :href="\'#/\' + full + \'/code/tree/\' + encodeURIComponent(single.tag_name)">' +
 '          <icon name="code" :size="13"></icon>浏览此版本的代码</a>' +
