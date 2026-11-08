@@ -9,9 +9,10 @@
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "test": "node tests/compile-check.js && node tests/render-check.js && node tests/img-check.js && node tests/mobile-check.js",
+    "test": "node tests/compile-check.js && node tests/render-check.js && node tests/img-check.js && node tests/mobile-check.js && node tests/server-check.js",
     "test:render": "node tests/render-check.js",
-    "bump": "bash deploy/bump.sh"
+    "bump": "bash deploy/bump.sh",
+    "test:server": "node tests/server-check.js"
   },
   "engines": {
     "node": ">=18"

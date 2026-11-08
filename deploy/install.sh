@@ -7,15 +7,20 @@
 # ============================================================
 set -euo pipefail
 
-ROOT=/opt/gh-web
+ROOT="${GHW_ROOT:-/opt/gh-web}"
 WEB=$ROOT/web
 CONF_SRC=$ROOT/deploy/gh-web.conf
 # 必须以 zz- 开头：nginx 按字母序加载 conf.d，第一个 listen 80 的
 # server 会成为默认服务器。用 zz- 排到最后，才不会接管未知 Host。
 CONF_DST=/etc/nginx/conf.d/zz-gh-web.conf
 CACHE_DIR=/var/cache/nginx/gh-api
-HTPASSWD=/etc/nginx/.ghweb.htpasswd
-DOMAIN=ghs.0lt.top
+AUTH_FILE=/etc/nginx/.ghweb.htpasswd
+DOMAIN="${GHW_DOMAIN:-}"
+if [[ -z $DOMAIN ]]; then
+  echo "请先指定域名，例如："
+  echo "  GHW_DOMAIN=gh.example.com sudo -E bash $0"
+  exit 1
+fi
 
 say() { printf '\033[1m==>\033[0m %s\n' "$*"; }
 
@@ -33,15 +38,15 @@ mkdir -p "$CACHE_DIR"
 chown -R www-data:www-data "$CACHE_DIR"
 
 # ---------- 3. basic auth ----------
-if [[ ! -f $HTPASSWD ]]; then
-  say "生成访问口令（$HTPASSWD）"
-  PW="0lt-$(python3 -c "import secrets,string;print(''.join(secrets.choice(string.ascii_lowercase+string.digits) for _ in range(6)))")-$(python3 -c "import secrets,string;print(''.join(secrets.choice(string.ascii_lowercase+string.digits) for _ in range(6)))")"
-  python3 - "$PW" > "$HTPASSWD" <<'PY'
+if [[ ! -f $AUTH_FILE ]]; then
+  say "生成访问口令（$AUTH_FILE）"
+  PW="ghw-$(python3 -c "import secrets,string;print(''.join(secrets.choice(string.ascii_lowercase+string.digits) for _ in range(6)))")-$(python3 -c "import secrets,string;print(''.join(secrets.choice(string.ascii_lowercase+string.digits) for _ in range(6)))")"
+  python3 - "$PW" > "$AUTH_FILE" <<'PY'
 import crypt, sys
 print("gh-web:" + crypt.crypt(sys.argv[1], crypt.mksalt(crypt.METHOD_SHA512)))
 PY
-  chmod 640 "$HTPASSWD"
-  chown root:www-data "$HTPASSWD"
+  chmod 640 "$AUTH_FILE"
+  chown root:www-data "$AUTH_FILE"
   echo
   echo "  ┌──────────────────────────────────────────┐"
   echo "  │  请立刻记录访问口令                        │"
@@ -50,7 +55,7 @@ PY
   echo "  └──────────────────────────────────────────┘"
   echo
 else
-  say "已存在口令文件，保持不变（重置：删除 $HTPASSWD 后重跑本脚本）"
+  say "已存在口令文件，保持不变（重置：删除 $AUTH_FILE 后重跑本脚本）"
 fi
 
 # 口令文件已存在时，可通过 GHWEB_PW 传入现有口令，让第 7 步的完整自检跑得起来
@@ -62,12 +67,16 @@ chmod -R a+rX "$WEB"
 
 # ---------- 5. nginx 配置 ----------
 say "安装 nginx 站点配置"
-if [[ -f $CONF_DST ]] && ! cmp -s "$CONF_SRC" "$CONF_DST"; then
+render_conf() {
+  sed -e "s|__DOMAIN__|$DOMAIN|g" -e "s|__ROOT__|$ROOT|g" "$CONF_SRC"
+}
+if [[ -f $CONF_DST ]] && ! cmp -s <(render_conf) "$CONF_DST"; then
   BAK="$CONF_DST.bak-install-$(date +%Y%m%d%H%M%S)"
   cp -p "$CONF_DST" "$BAK"
   say "  原配置已备份 → $BAK"
 fi
-install -m 644 "$CONF_SRC" "$CONF_DST"
+render_conf > "$CONF_DST"
+chmod 644 "$CONF_DST"
 
 # 首次签发证书时，443 会因缺证书导致 nginx -t 失败，先用 80-only 版本过渡
 if [[ ! -d /etc/letsencrypt/live/$DOMAIN ]]; then
@@ -97,7 +106,8 @@ if [[ ! -d /etc/letsencrypt/live/$DOMAIN ]]; then
     certbot certonly --webroot -w /var/www/certbot -d "$DOMAIN" \
       --non-interactive --agree-tos --register-unsafely-without-email
     say "装回完整 443 配置"
-    install -m 644 "$CONF_SRC" "$CONF_DST"
+    render_conf > "$CONF_DST"
+    chmod 644 "$CONF_DST"
     nginx -t && systemctl reload nginx
   else
     say "跳过证书。DNS 指向本机后执行：sudo bash $0 --with-cert"
@@ -156,7 +166,7 @@ else say "自检有 $BAD 项不符合预期，请检查上面的输出"; fi
 
 echo
 say "完成。打开 https://$DOMAIN/"
-echo "  口令文件：$HTPASSWD"
+echo "  口令文件：$AUTH_FILE"
 if [[ -z "${PW:-}" ]]; then
   echo "  忘记口令？删除该文件后重跑本脚本即可生成新的。"
 fi

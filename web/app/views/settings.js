@@ -18,7 +18,7 @@
     computed: {
       shellC: function () { return this.shell; },
       patLine: function () {
-        const t = API.token || '';
+        const t = API.pat || '';
         if (!t) return '—';
         if (this.masking) return t.slice(0, 7) + '•'.repeat(Math.max(0, Math.min(28, t.length - 11))) + t.slice(-4);
         return t;
@@ -51,7 +51,7 @@
       save: function () {
         const t = (this.tok || '').trim();
         if (!t) { U.toast('请输入新的 Token', 'bad'); return; }
-        API.setToken(t);
+        API.setPat(t);
         const self = this;
         API.me().then(function (u) {
           self.me = u;
@@ -72,7 +72,7 @@
       },
       wipe: function () {
         U.store.clear();
-        API.setToken(null);
+        API.setPat(null);
         U.toast('已清除本站在此设备上的全部数据');
         setTimeout(function () { location.reload(); }, 600);
       },
@@ -108,7 +108,7 @@
 '        <div style="display:flex;gap:8px">' +
 '          <input class="input mono-input" :value="patLine" readonly>' +
 '          <button class="btn" @click="masking = !masking">{{ masking ? "显示" : "隐藏" }}</button>' +
-'          <button class="btn" @click="copy(API.token, \'Token 已复制\')">' +
+'          <button class="btn" @click="copy(API.pat, \'Token 已复制\')">' +
 '            <icon name="copy" :size="13"></icon></button>' +
 '        </div>' +
 '        <span class="hint">Token 只保存在本机 localStorage 中，不会经过本站服务端持久化。</span>' +

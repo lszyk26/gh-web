@@ -16,7 +16,8 @@
 # ============================================================
 set -euo pipefail
 
-IDX=/opt/gh-web/web/index.html
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+IDX="$ROOT/web/index.html"
 [[ -f $IDX ]] || { echo "找不到 $IDX"; exit 1; }
 
 NEW="${1:-$(date +%Y%m%d%H%M%S)}"

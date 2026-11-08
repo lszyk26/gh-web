@@ -145,7 +145,7 @@
     created: function () {
       const self = this;
       API.onRate = function (r) { self.rate = r; };
-      API.loadToken();
+      API.loadPat();
       window.addEventListener('hashchange', this.onHash);
       if (!location.hash) location.replace('#/');
     },
@@ -172,7 +172,7 @@
       },
       back: function () { history.back(); },
       boot: async function () {
-        if (!API.hasToken()) { this.ready = true; return; }
+        if (!API.hasPat()) { this.ready = true; return; }
         try {
           this.user = await API.me();
           this.ready = true;
@@ -180,7 +180,7 @@
         } catch (e) {
           this.ready = true;
           if (e.status === 401) {
-            API.setToken(null);
+            API.setPat(null);
             this.user = null;
             U.toast('Token 已失效，请重新登录', 'bad');
           } else {
@@ -212,14 +212,14 @@
           self.loadCounts();
           if (self.route.name === 'dashboard') self.route = parse(location.hash);
         }).catch(function (e) {
-          API.setToken(null);
+          API.setPat(null);
           self.ready = true;
           self.user = null;
           U.toast(e.status === 401 ? 'Token 无效或权限不足' : ('连接失败：' + e.message), 'bad');
         });
       },
       doLogout: function () {
-        API.setToken(null);
+        API.setPat(null);
         API.forget();
         this.user = null;
         location.hash = '#/';

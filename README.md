@@ -1,8 +1,209 @@
 # GH·WEB
 
-GitHub 的高速只读镜像。跑在自己的服务器上，只为一个人服务。
+GitHub 的高速只读镜像。自己部署，自己用。
 
-打开 `https://ghs.0lt.top/`，贴上 Personal Access Token 就能用。
+打开站点，填入自己的 Personal Access Token，就能以接近本地应用的速度浏览仓库、提交、议题、PR、Actions、通知。
+
+同一份代码可以在三种地方跑：
+
+| 在哪跑 | 怎么跑 | 适合 |
+|---|---|---|
+| 手机 | Termux + Node | 随身、没有服务器时临时用 |
+| 电脑 | Windows / macOS / Linux + Node | 本机使用、内网共享 |
+| 服务器 | Node、systemd、Docker、nginx | 长期在线、配自己的域名 |
+
+服务端是**一个文件、零运行时依赖**的 `server.js`（Node 18+），只做三件事：发静态文件、把 `/api/*` 反代到 `api.github.com` 并缓存、可选的访问口令。
+
+---
+
+## 三步开始
+
+```bash
+git clone https://github.com/lszyk26/gh-web.git
+cd gh-web
+node server.js
+```
+
+打开 `http://localhost:8787/`，填入 GitHub Token。
+
+> 公开到公网前一定要设口令：
+> ```bash
+> GHW_PASSWORD='你的口令' node server.js
+> ```
+
+---
+
+## 部署
+
+### 一、手机（Termux）
+
+适合 Android。Termux 请从 **F-Droid** 或 GitHub Release 安装，Google Play 版本已停止更新。
+
+```bash
+# 1. 装环境
+pkg update && pkg install -y nodejs-lts git
+
+# 2. 取代码
+git clone https://github.com/lszyk26/gh-web.git
+cd gh-web
+
+# 3. 启动（脚本会自动检查 Node 版本、申请唤醒锁）
+GHW_PASSWORD='你的口令' bash deploy/termux.sh
+```
+
+- 手机浏览器：`http://127.0.0.1:8787/`
+- 同一 WiFi 的电脑：`http://<手机局域网 IP>:8787/`（IP 在「设置 → 关于手机 → 状态信息」或 `ifconfig` 里看）
+- 想让它在后台常驻：
+
+```bash
+nohup node server.js > gh-web.log 2>&1 &
+termux-wake-lock          # 阻止系统在息屏后冻结
+```
+
+> Termux 卸载或清理数据会丢 `node_modules` 之外的所有东西，仓库本身建议放 `~/storage` 之外再定期备份。
+
+### 二、电脑（Windows / macOS / Linux）
+
+先装 **Node.js 18 或更高版本**：<https://nodejs.org/>
+
+**macOS / Linux**
+
+```bash
+git clone https://github.com/lszyk26/gh-web.git
+cd gh-web
+GHW_PASSWORD='你的口令' node server.js
+```
+
+**Windows（PowerShell）**
+
+```powershell
+git clone https://github.com/lszyk26/gh-web.git
+cd gh-web
+$env:GHW_PASSWORD = "你的口令"
+node server.js
+```
+
+**Windows（CMD）**
+
+```cmd
+set GHW_PASSWORD=你的口令
+node server.js
+```
+
+也可以把配置写进 `.env`（复制 `.env.example`），之后直接 `node server.js` 即可。手机、电脑、服务器都认这个文件。
+
+局域网里的其它设备访问 `http://<这台电脑的 IP>:8787/`。Windows 首次运行可能弹出防火墙提示，允许「专用网络」即可。
+
+### 三、服务器
+
+#### 方式 A：Node + systemd（推荐）
+
+```bash
+sudo mkdir -p /opt/gh-web
+sudo git clone https://github.com/lszyk26/gh-web.git /opt/gh-web
+cd /opt/gh-web
+
+# 写配置
+sudo cp .env.example .env
+sudo sed -i "s/change-me/换成你的口令/" .env
+sudo chmod 640 .env
+sudo chown -R www-data:www-data /opt/gh-web
+
+# 装服务
+sudo cp deploy/gh-web.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now gh-web
+sudo systemctl status gh-web
+```
+
+默认只监听 `0.0.0.0:8787`。要绑域名和 HTTPS，在前面放一层 nginx 或 Caddy，见方式 C。
+
+#### 方式 B：Docker
+
+```bash
+git clone https://github.com/lszyk26/gh-web.git
+cd gh-web
+GHW_PASSWORD='你的口令' docker compose up -d
+```
+
+或者不用 compose：
+
+```bash
+docker build -t gh-web .
+docker run -d --name gh-web -p 8787:8787 \
+  -e GHW_PASSWORD='你的口令' \
+  --restart unless-stopped gh-web
+```
+
+镜像基于 `node:22-alpine`，不执行 `npm install`（运行时零依赖），构建很快。容器带 `/healthz` 健康检查。
+
+#### 方式 C：nginx / Caddy 反代（配域名与 HTTPS）
+
+Node 只监听 `127.0.0.1:8787`，由 nginx 负责 TLS。模板在 `deploy/nginx-proxy.conf`：
+
+```bash
+sudo cp deploy/nginx-proxy.conf /etc/nginx/conf.d/zz-gh-web.conf
+sudo sed -i 's/gh.example.com/你的域名/g' /etc/nginx/conf.d/zz-gh-web.conf
+sudo certbot --nginx -d 你的域名
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Caddy 更简单，`Caddyfile` 两行：
+
+```
+gh.example.com {
+    reverse_proxy 127.0.0.1:8787
+}
+```
+
+> ⚠️ nginx 配置文件名建议带 `zz-` 前缀。nginx 按 `conf.d` 字母序加载，**第一个**监听 80 端口的 `server` 会顺带成为该端口的默认服务器；取名靠前会接管所有未匹配的 Host，悄悄改变既有站点的行为。
+
+#### 方式 D：生产用的 nginx 直连配置（进阶）
+
+`deploy/gh-web.conf` 是本站线上在用的配置：nginx 直接反代 `api.github.com` 并用 `proxy_cache` 落盘缓存，静态资源也由 nginx 直出，性能比 Node 中转略好。它依赖一个额外的免密登录服务（`auth_request`），不是开箱即用，适合想深度定制的人参考。
+
+`deploy/install.sh` 是配套的幂等安装脚本（`--with-cert` 首次签发证书）。
+
+### 配置项
+
+环境变量（也可写进 `.env`）：
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `PORT` | `8787` | 监听端口 |
+| `HOST` | `0.0.0.0` | 监听地址；只给本机用可设 `127.0.0.1` |
+| `GHW_PASSWORD` | 空 | 访问口令。**留空 = 不设防**，只建议本机/局域网 |
+| `GHW_ROOT` | `./web` | 站点根目录 |
+| `GHW_API_ORIGIN` | `https://api.github.com` | 上游地址（可指向反向代理） |
+| `GHW_CACHE_TTL` | `300` | API 缓存秒数 |
+| `GHW_CACHE_MAX_MB` | `128` | API 内存缓存上限 |
+| `GHW_UPSTREAM_TIMEOUT` | `20000` | 上游超时（毫秒） |
+| `GHW_TLS_CERT` / `GHW_TLS_KEY` | 空 | 直接由 Node 提供 HTTPS 时使用 |
+
+口令验证支持两种方式：
+
+- **Cookie**：访问 `/login` 输入一次口令，下发一年有效的 HttpOnly Cookie；
+- **Basic Auth**：用户名随意，密码为 `GHW_PASSWORD`，方便 `curl -u`。
+
+两者任选其一即可。`/logout` 清除 Cookie。健康检查：`GET /healthz`。
+
+### HTTPS
+
+三种选择，按省事程度排：
+
+1. **Caddy**：自动申请续期证书，两行配置。
+2. **nginx + certbot**：`deploy/nginx-proxy.conf` 已按这个套路写好。
+3. **Node 直接上 TLS**：设置 `GHW_TLS_CERT` / `GHW_TLS_KEY`。证书要自己续期，适合已有证书的场景。
+
+---
+
+## 使用
+
+1. 打开站点，在登录页填入 **GitHub Personal Access Token**（不是账号密码）。
+2. Token 需要这些权限：`repo`、`read:user`、`notifications`。快捷创建入口在登录页上有链接。
+3. Token 只保存在浏览器的 `localStorage`，由前端直接发给 `api.github.com`（经本地代理转发），服务端不落盘、不打日志。
+
+只读浏览不需要写权限；要发表评论、合并 PR、标记通知已读，才需要 `repo` 权限。这些操作会**真实写入 GitHub**，界面上都有二次确认。
 
 ---
 
@@ -21,26 +222,26 @@ GitHub 的高速只读镜像。跑在自己的服务器上，只为一个人服�
 
 缓存层有三个容易踩的坑，都已处理：
 
-1. **不能直接收 `Authorization` 头**。浏览器发 `Authorization: Bearer <PAT>`，而站点的 basic auth 也用这个头——nginx 会先拿它去做口令校验，请求直接被 401 拒掉。所以前端改发自定义头 `X-GH-Token`，由 nginx 翻成 `Bearer` 转发给 GitHub。
-2. **缓存键里不能放原始 token**。nginx 会把缓存键明文写进磁盘上的缓存文件（`KEY: gh|ghp_xxx|GET|/user`）。前端先在本地算一个不可逆摘要（FNV-1a 双路，16 个十六进制字符）放进 `X-GH-Cache-Bucket`，缓存键只用摘要。既能把不同凭证的缓存分开，又不留凭证。
+1. **不能直接收 `Authorization` 头**。浏览器发 `Authorization: Bearer <PAT>`，而站点自己的口令验证也用这个头——会先被口令校验拦掉。所以前端改发自定义头 `X-GH-Token`，由服务端翻成 `Bearer` 转发给 GitHub。
+2. **缓存键里不能放原始 token**。落盘缓存会把键明文写进文件（`KEY: gh|ghp_xxx|GET|/user`）。前端先在本地算一个不可逆摘要（FNV-1a 双路，16 个十六进制字符）放进 `X-GH-Cache-Bucket`，缓存键只用摘要。既能把不同凭证的缓存分开，又不留凭证。
 3. **必须显式忽略上游的 `Cache-Control: private`**。GitHub 的响应都带这个头，不忽略就什么都缓存不上。
-
 
 ---
 
 ## 架构
 
 ```
-浏览器 ──► ghs.0lt.top ──┬─ 静态资源：/opt/gh-web/web 本地直出
-   (basic auth)         └─ /api/*：nginx proxy_cache ──► api.github.com
-                                                  └─ 命中则 8ms 返回，未命中回源并落盘
+浏览器 ──► 你的域名 ──┬─ 静态资源：web/ 本地直出
+   (可选口令)          └─ /api/*：缓存层 ──► api.github.com
+                                  命中则毫秒返回，未命中回源并缓存
 ```
 
 前端是零构建的 Vue 3 单页应用：`vendor/vue.global.prod.js` 从本地加载，视图组件拆成独立文件按需引入，没有打包步骤——改完刷新即生效。
 
 ```
-/opt/gh-web/
-├── web/                     站点根目录（nginx root）
+gh-web/
+├── server.js                自包含服务器（静态 + API 代理 + 口令）
+├── web/                     站点根目录
 │   ├── index.html           外壳 + 脚本装载顺序
 │   ├── styles/main.css      设计系统（全部样式）
 │   ├── app/
@@ -48,14 +249,20 @@ GitHub 的高速只读镜像。跑在自己的服务器上，只为一个人服�
 │   │   ├── api.js           token 保管 + 缓存传输 + 全部 GitHub 接口
 │   │   ├── components.js    图标集 + 复用组件（代码块、diff、分页器…）
 │   │   ├── app.js           hash 路由 + 侧边栏 + 顶栏 + 挂载
-│   │   └── views/*.js       22 个视图，一个文件一个页面
+│   │   └── views/*.js       各页面视图，一个文件一个页面
 │   └── vendor/              vue / highlight.js / marked（本地副本）
 ├── deploy/
-│   ├── gh-web.conf          nginx 站点配置（含缓存层）
-│   └── install.sh           幂等安装脚本，装到 conf.d/zz-gh-web.conf
-└── tests/
-    ├── compile-check.js     编译全部 37 个模板，抓模板语法错误
-    └── render-check.js      jsdom 真跑 22 条路由 + 内容断言
+│   ├── termux.sh            手机一键启动
+│   ├── gh-web.service       systemd 服务
+│   ├── nginx-proxy.conf     nginx 反代模板
+│   ├── gh-web.conf          生产用 nginx 直连配置（进阶）
+│   ├── install.sh           幂等安装脚本
+│   ├── rotate.sh            轮换访问口令 / 会话密钥
+│   └── bump.sh              递增前端资源版本号
+├── tests/                   模板编译、路由渲染、图片改写、移动端回归
+├── Dockerfile
+├── compose.yaml
+└── .env.example
 ```
 
 ---
@@ -63,49 +270,53 @@ GitHub 的高速只读镜像。跑在自己的服务器上，只为一个人服�
 ## 安全
 
 - **Token 只存在浏览器 `localStorage`**。服务端从不接收、不落盘、不打日志。
-- **全站 basic auth**（`/etc/nginx/.ghweb.htpasswd`）。URL 外泄也进不来，且拦住了 ACME 之外的路径。
-- **`access_log off`**。basic auth 用户名和请求路径都不留痕。
-- **两个限流区**：站点 30 r/s burst 100（只用来拦口令爆破；首屏要并发拉 31 个资源，早先设 2 r/s 会把正常访问打成 503/429），API 6 r/s burst 20（防手滑打爆 5000/h 额度）。命中返回 429 而非 503，便于与「服务不可用」区分。
-- 缓存按 token 分桶，不会把 A 的响应喂给 B。
+- **口令可选但公网必备**。Cookie 值是 `HMAC-SHA256(口令, 固定串)`，不是口令本身；改口令即可让所有设备立即失效。
+- **缓存按凭证摘要分桶**，不会把 A 的响应喂给 B。
+- **静态文件有目录穿越防护**，`/api` 只转发白名单请求头。
+- 生产 nginx 配置里 `access_log off`，basic auth 用户名和请求路径都不留痕。
+- 两个限流区（仅生产 nginx 配置）：站点 30 r/s burst 100（只用来拦口令爆破；首屏要并发拉 31 个资源），API 6 r/s burst 20（防手滑打爆 5000/h 额度）。命中返回 429 而非 503，便于与「服务不可用」区分。
 
-唯一手工留存的秘密：`/etc/nginx/.ghweb.htpasswd`（已纳入加密备份包）。重置方式——删掉它，重跑 `install.sh`，会打印新口令。
+---
 
-## 部署
+## 开发与测试
 
-```bash
-sudo bash /opt/gh-web/deploy/install.sh              # 常规安装/更新
-sudo bash /opt/gh-web/deploy/install.sh --with-cert  # 首次签发证书
-```
-
-幂等，可反复执行；覆盖 nginx 配置前会自动留 `.bak-install-<ts>`。
-
-DNS 需要一条 A 记录：`ghs.0lt.top` → 本机公网 IP。**签发证书时必须灰云直连**，签完再考虑开橙云。
-
-> ⚠️ **站点配置文件名必须保持 `zz-` 前缀**（`/etc/nginx/conf.d/zz-gh-web.conf`）。
-> nginx 按 `conf.d` 字母序加载，**第一个**监听 80 端口的 `server` 会顺带成为该端口的默认服务器。
-> 若叫 `gh-web.conf`，它会抢在 `memhub.conf` 前面，接管所有未匹配的 Host——
-> 未知域名从原来的 404 变成 401，属于悄悄改变了既有站点的行为。`install.sh` 已按 `zz-` 命名安装。
-
-## 测试
+改前端不需要构建，刷新即可。测试需要一次性安装开发依赖：
 
 ```bash
-cd /opt/gh-web && npm i                       # 只需一次
-node tests/compile-check.js                   # 模板语法
-node tests/render-check.js                    # 路由渲染 + 内容断言
-node tests/render-check.js '#/some/route'     # 单条路由
+npm install --omit=optional        # 只装 devDependencies 里的 jsdom 与 Vue 编译器
+node tests/compile-check.js        # 模板语法
+node tests/render-check.js         # jsdom 跑全部路由 + 内容断言
+node tests/render-check.js '#/some/route'
+node tests/img-check.js            # Markdown 相对图片/链接的改写
+node tests/mobile-check.js         # 375px 视口下的列表行回归
+node tests/server-check.js         # 服务器端到端：静态/口令/代理/缓存（22 项断言）
+node tests/root-check.js           # 多根视图清单（提示用）
 ```
 
 `render-check.js` 用 jsdom 挂载真实 DOM、喂假数据、逐条路由检查「无控制台错误 + 关键内容出现」。它抓到过真 bug——比如模板字符串里 `\/` 反斜杠被吃掉导致正则非法、以及 `window.VIEWS` 在视图脚本加载时还不存在。
 
+### 改完前端记得递增版本号
+
+生产 nginx 给 js/css/字体发的是 `Cache-Control: public, max-age=604800, immutable`（7 天强缓存），浏览器在这 7 天内**不会回源校验**。所以改完 `web/` 下的任何文件后必须递增版本号：
+
+```bash
+bash deploy/bump.sh            # 用时间戳
+bash deploy/bump.sh 20261108f  # 或指定
+```
+
+`bump.sh` 会把 `index.html` 里全部 `?v=<旧版本>` 换成新版本。静态文件由服务器直接从磁盘读取，不需要重启。
+
+> 历史教训：首版给资源发了 `immutable` 却没有版本号，改完前端后浏览器一直用旧 JS，出现「图标不显示 / 过渡动画消失 / 新旧代码混用」等诡异现象，且极难排查。
+
+---
+
 ## 能力边界
 
-**能做的**（覆盖 gh-mcp 全部只读能力）
-仓库浏览、目录树与文件查看（语法高亮 + Markdown 渲染）、提交历史与单提交 diff、议题与 PR 列表/详情/时间线/评论、评审状态、PR 文件变更与检查项、分支与标签、Release 与附件下载、代码与议题搜索、用户/组织主页、星标、通知（可标已读）、Actions 运行与任务列表、两个引用之间的比较。
+**能做的**：仓库浏览、目录树与文件查看（语法高亮 + Markdown 渲染）、提交历史与单提交 diff、议题与 PR 列表/详情/时间线/评论、评审状态、PR 文件变更与检查项、分支与标签、Release 与附件下载、代码与议题搜索、用户/组织主页、星标、通知（可标已读）、Actions 运行与任务列表、两个引用之间的比较。
 
-**做不了的**（依赖 GitHub 私有接口或前端专有协议）
-Actions 实时日志流、Codespaces、Copilot、Discussions、Projects、Marketplace、完整的账号设置后台、Web IDE。
+**做不了的**：Actions 实时日志流、Codespaces、Copilot、Discussions、Projects、Marketplace、完整的账号设置后台、Web IDE——这些依赖 GitHub 私有接口或前端专有协议。
 
-**有副作用但已实现**：评论、开关议题、合并/关闭 PR、加/取消星标、标记通知已读——这些会**真实写入 GitHub**，界面上都有二次确认或明确提示。
+**有副作用但已实现**：评论、开关议题、合并/关闭 PR、加/取消星标、标记通知已读。这些会**真实写入 GitHub**。
 
 ---
 
@@ -121,10 +332,9 @@ Actions 实时日志流、Codespaces、Copilot、Discussions、Projects、Market
 
 ## 移动端适配
 
-### ⚠️ 列表行的坑（最容易踩）
+### 列表行的坑（最容易踩）
 
-`.row-side`（星标/复刻/时间/按钮）是 `flex:none`（**不收缩**）。在窄屏上它会把左侧
-`.row-main` 挤到只剩一个字的宽度 —— 表现为仓库名显示成 `o…`、`s…`，描述被压成竖排。
+`.row-side`（星标/复刻/时间/按钮）是 `flex:none`（**不收缩**）。在窄屏上它会把左侧 `.row-main` 挤到只剩一个字的宽度——表现为仓库名显示成 `o…`、`s…`，描述被压成竖排。
 
 修法在 `@media(max-width:680px)`：让 `.row-side` **整体换行**到第二行：
 
@@ -133,189 +343,76 @@ Actions 实时日志流、Codespaces、Copilot、Discussions、Projects、Market
 .row-side{flex:1 1 100%; order:9; justify-content:flex-start}
 ```
 
-同时手机上标题改为允许折行（`white-space:normal`），因为仓库名普遍较长，
-用省略号会丢信息。`@media(max-width:420px)` 再隐藏「复刻数」（`.u-fork`）。
+同时手机上标题改为允许折行（`white-space:normal`），因为仓库名普遍较长，用省略号会丢信息。`@media(max-width:420px)` 再隐藏「复刻数」（`.u-fork`）。
 
-**新增任何列表页时，务必复用 `.row` / `.row-main` / `.row-side` 这套结构**，
-否则会重新踩这个坑。
-
-### `.stat-inline` 的行内/块级差异
-
-`.stat-inline .s .n` / `.l` 必须纵向排列。但有的页面写成 `<div class="s">`、
-有的写成 `<span class="s">` —— 行内元素不会换行，会让「1,153」和「匹配项目」粘在一起。
-CSS 里已统一加 `display:block`，两种写法都正确。
+**新增任何列表页时，务必复用 `.row` / `.row-main` / `.row-side` 这套结构**，否则会重新踩这个坑。
 
 ### 顶栏
 
-手机上用 `.hide-sm` 隐藏次要读数（缓存命中率、额度条），只留面包屑与刷新按钮，
-避免一行塞太多东西。
+手机上用 `.hide-sm` 隐藏次要读数（缓存命中率、额度条），只留面包屑与刷新按钮，避免一行塞太多东西。
 
 ### 测试
 
-`tests/mobile-check.js` 把视口固定为 **375px**（iPhone SE/12 mini 级）渲染
-`#/trends`、`#/repos`、`#/`，断言列表行结构完整。这是**回归测试**：
-改列表行结构或 CSS 后被挤压会立刻暴露。
+`tests/mobile-check.js` 把视口固定为 **375px**（iPhone SE/12 mini 级）渲染 `#/trends`、`#/repos`、`#/`，断言列表行结构完整。这是**回归测试**：改列表行结构或 CSS 后被挤压会立刻暴露。
 
 ---
 
-## 登录：一次输入，一年免密
+## 一些踩过的坑
 
-**不再每次弹浏览器密码框。** 访问 `https://ghs.0lt.top/` 会跳到本站登录页，
-输入一次访问令牌 → 下发一个 **HttpOnly Cookie（有效期 1 年）**，之后自动登录。
+### Markdown 里的相对图片与链接
 
-```
-访问令牌：[访问令牌已移除]     ← 与 basic auth 密码是两个不同的东西
-```
+README 写成相对路径是 GitHub 上的常规写法：
 
-### 实现（`/opt/ghweb-auth/`，纯标准库，监听 127.0.0.1:9093）
-
-| 接口 | 用途 |
-|---|---|
-| `/_verify` | 供 nginx `auth_request` 调用：Cookie 正确 204，否则 401 |
-| `/login` | 登录页；带 `?t=<令牌>` 正确则下发 Cookie 并 302 回首页 |
-| `/logout` | 清 Cookie |
-
-- Cookie 值 = `HMAC(secret, "ghw-session-v1")`，**不是令牌本身** —— 即使 Cookie 泄露也无法反推令牌。
-- **无状态**：不存会话，校验时现算现比；轮换 secret 即可让所有设备立即失效。
-- nginx 侧用 `satisfy any` 同时保留 `auth_request` 与 `auth_basic`：
-  **Cookie 或原密码任选其一都能进**，认证服务故障时不会被自己锁在门外。
-
-### 令牌轮换
-
-```bash
-bash /opt/gh-web/deploy/rotate.sh                 # 换令牌 + 换 secret（踢掉所有设备）
-bash /opt/gh-web/deploy/rotate.sh --keep-session  # 只换令牌，已登录设备不受影响
+```html
+<img src="assets/showcase/hero.png" width="100%" />
 ```
 
-### ⚠️ 别把我锁在外面
+但 SPA 里浏览器按**当前页面地址**解析相对路径，于是会去要 `https://你的站点/<owner>/<repo>/assets/...` → 命中 SPA 兜底 → 图片全部破图。
 
-改这块配置时务必确认**两条路至少有一条通**：
-```bash
-curl -sk -o /dev/null -w '%{http_code}\n' -u "gh-web:<密码>" https://ghs.0lt.top/   # 期望 200
-curl -sk -o /dev/null -w '%{http_code}\n' https://ghs.0lt.top/login                 # 期望 200
-```
-`deploy/gh-web.conf` 里 `location @ghw_gate` 负责把未鉴权请求 302 到 `/login`
-（而不是像原来那样弹 401 原生密码框）。
+做法（`util.js` + `components.js`）：
+
+- `U.rewriteImg(html)` / `U.rewriteLinks(html)`：把相对路径改写为绝对地址，图片 → `raw.githubusercontent.com/<o>/<r>/<ref>/<path>`，链接 → 站内代码路由 `#/<o>/<r>/code/blob/<ref>/<path>`（README 里写死的本仓 GitHub 绝对链接也一并拉回站内）。
+- 在 `U.md()` 返回前统一调用，**必须在 marked 解析之后**。
+- 仓库上下文由 `<markdown>` 组件的 `owner` / `repo` / `branch` 属性传入。
+
+> ⚠️ **别把那个属性叫 `ref`**：`ref` 是 Vue 的保留属性，写在组件上**不会**作为 prop 传进去，只会静默丢失——表现就是「上下文永远为空、图片照样破」。
+
+> ⚠️ **`tests/render-check.js` 里必须补 `w.TextDecoder`**：jsdom 的 `window` 不带 `TextDecoder`，而 `repo.js` 用它解 base64 README，缺了会被 `catch` 成空串 → **静默**落到「这个仓库没有 README」的空状态，测试却因为页面里另有「README」字样而假通过。
+
+### 多根模板与过渡
+
+`run / commit / compare / issue / pull / user` 这些详情页的模板是 `v-if 加载态` / `v-else-if 错误态` / `v-else 正文` 三个并列根。
+
+Vue 的 `<transition>` 要求直接子节点**单根**，否则过渡会**静默失效**（生产版无告警）。因此 `app.js` 里过渡内套了一层单根 `.view-host` 作为 carrier。
+
+`tests/root-check.js` 会列出当前的多根视图清单，便于新增页面时留意。
+
+### 视图脚本漏引
+
+`render-check.js` 会从 `app/views/` **读目录**加载脚本，所以它无法发现「`index.html` 漏引某个 view」这类问题。历史上 `views/user.js` 就漏引过，导致用户主页错落成概览页。**新增视图后请确认 `index.html` 里也加了对应的 `<script>`。**
 
 ---
 
-## 热门项目页（`#/trends`）
+## 热门项目页
 
-GitHub **没有**官方的 trending 接口（github.com/trending 是网页端私有渲染，无 API）。
-本页用**搜索语法近似**，与 gh-mcp 的 `gh_trending` 同源但做了两处修正：
+GitHub **没有**官方的 trending 接口（github.com/trending 是网页端私有渲染，无 API）。本页用**搜索语法近似**：
 
 | 模式 | 搜索式 | 排序 |
 |---|---|---|
 | 新晋 | `created:>=<窗> stars:>=N fork:false archived:false` | 星标 |
 | 活跃 | `pushed:>=<窗> stars:>=N fork:false archived:false` | 最近更新 |
 
-时间窗：今日 / 本周(7d) / 本月(30d) / 近 90 天。星标门槛：新晋 5/20/50/100，活跃 300/300/150/80。
+时间窗：今日 / 本周(7d) / 本月(30d) / 近 90 天。
 
-### ⚠️ 两个必须记住的坑（都实测过）
+两个必须记住的坑：
 
-1. **不能用 `stars:<=N` 收窄**。GitHub 搜索不认这个语法，会把它当成**普通文本词**去匹配——
-   结果是**暴涨**而不是收窄（实测 11 万 → 3.4 亿，巨头照旧霸榜）。
-   正确的区间写法是 `stars:a..b`。
+1. **不能用 `stars:<=N` 收窄**。GitHub 搜索不认这个语法，会把它当成普通文本词去匹配——结果是**暴涨**而不是收窄（实测 11 万 → 3.4 亿）。正确的区间写法是 `stars:a..b`。
+2. **「活跃」不能写成 `created:>=窗 + pushed:>=窗`**。时间窗内新建的仓库，其推送时间必然也落在窗内，条件完全冗余——实测结果与「新晋」一字不差。真正的「活跃」应只看 `pushed:>=窗`，再配星标门槛滤掉索引/机器人仓库，并按 `sort=updated` 排序。
 
-2. **「活跃」不能写成 `created:>=窗 + pushed:>=窗`**。时间窗内新建的仓库，其推送时间必然也落在窗内，
-   条件完全冗余——实测结果与「新晋」一字不差（都是 1151 条）。
-   真正的「活跃」应只看 `pushed:>=窗`（不限创建时间），再配星标门槛滤掉索引/机器人仓库，
-   并按 `sort=updated` 排序，榜单才有新鲜感。
-
-### 限流
-
-搜索接口限流单独计算且严格（未登录约 10 次/分，登录后约 30 次/分），
-**远低于**其余接口的 5000 次/小时。因此本页：
-
-- 不做自动轮询；
-- 切换筛选即发一次请求（每次都是新的搜索式，`noMem` 不走内存缓存）；
-- nginx 的 `proxy_cache` 对相同搜索式仍有效（二次请求 `x-ghw-cache: HIT`）；
-- 命中 403/429 时，页面上会给出「等一分钟再试」的明确提示，而不是抛 HTTP 403。
+搜索接口限流单独计算且严格（未登录约 10 次/分，登录后约 30 次/分），远低于其余接口的 5000 次/小时。因此本页不做自动轮询，切换筛选才发请求，命中 403/429 时给出「等一分钟再试」的明确提示。
 
 ---
 
-## 备份
+## 许可
 
-`/opt/gh-web` 已登记进 `ssh-git-autosync`，每 5 分钟镜像到私有仓 `lszyk26/gh-web`（`node_modules` 除外）。nginx 配置、htpasswd 随 `server-secrets-backup` 的 AES-256 加密包一起走。
-
----
-
-## 前端资源失效：`?v=` 版本号（改完必做）
-
-nginx 给 js/css/字体发的是 `Cache-Control: public, max-age=604800, immutable`（7 天强缓存），
-浏览器在这 7 天内**不会回源校验**。所以**改完 `web/` 下的任何文件后必须递增版本号**：
-
-```bash
-bash /opt/gh-web/deploy/bump.sh          # 用时间戳
-bash /opt/gh-web/deploy/bump.sh 20261011d  # 或指定
-```
-
-`bump.sh` 会把 `index.html` 里全部 `?v=<旧版本>` 换成新版本，浏览器随即重新拉取所有前端资源。
-静态文件由 nginx 直接从磁盘读取，**不需要 reload**。
-
-> 历史教训：首版给资源发了 `immutable` 却没有版本号，改完前端后浏览器一直用旧 JS，
-> 出现「图标不显示 / 过渡动画消失 / 新旧代码混用」等诡异现象，且极难排查。
-
----
-
-## Markdown 里的相对图片与链接（已修）
-
-README 写成相对路径是 GitHub 上的常规写法：
-
-```html
-<img src="assets/showcase/hero.png" width="100%" />
-[片段时间点与导出参数](assets/showcase/mario-clips.md)
-```
-
-但 SPA 里浏览器按**当前页面地址**解析相对路径，于是会去要
-`https://ghs.0lt.top/<owner>/<repo>/assets/...` → 命中 SPA 兜底 → **图片全部破图**、
-点链接还会跳到错乱的页面。GitHub 官方站靠 `/raw/` 端点服务这些资源，我们得自己改写。
-
-做法（`util.js` + `components.js`）：
-
-- `U.rewriteImg(html)` / `U.rewriteLinks(html)`：把 `src=` / `href=` 里的相对路径改写为绝对地址，
-  图片 → `raw.githubusercontent.com/<o>/<r>/<ref>/<path>`（线上实测唯一可达的直链），
-  链接 → `github.com/<o>/<r>/blob/<ref>/<path>`（目录链接会由 GitHub 自己 301 到 `/tree/`）。
-- 在 `U.md()` 返回前统一调用，**必须在 marked 解析之后**：marked 的 gfm 允许正文里直接写
-  `<img>` 标签，它不会为这类标签解析相对路径。
-- 仓库上下文（owner/repo/ref）由 `<markdown>` 组件新增的 `owner` / `repo` / `branch` 属性传入，
-  各视图（repo、code、issue、pull、commit、releases）都要带上。取不到时用
-  `U.ctxFromHash()` 从路由兜底；再取不到就退回 `github.com/raw/<path>`（靠 Referer 猜仓库）。
-
-> ⚠️ **别把那个属性叫 `ref`**：`ref` 是 Vue 的保留属性（模板引用），写在组件上**不会**作为 prop
-> 传进去，只会静默丢失 —— 表现就是「上下文永远为空、图片照样破」。这里用的是 `branch`。
->
-> ⚠️ **`tests/render-check.js` 里必须补 `w.TextDecoder`**：jsdom 的 `window` 不带 `TextDecoder`，
-> 而 `repo.js` 用它解 base64 README，缺了会被 `catch` 成空串 → **静默**落到「这个仓库没有 README」
-> 空状态，测试却因为页面里另有「README」字样而假通过。
-
----
-
-## 已知的「多根模板」与过渡
-
-`run / commit / compare / issue / pull / user` 这 6 个详情页的模板是
-`v-if 加载态` / `v-else-if 错误态` / `v-else 正文` 三个并列根。
-
-Vue 的 `<transition>` 要求直接子节点**单根**，否则过渡会**静默失效**（生产版无告警）。
-因此 `app.js` 里过渡内套了一层单根 `.view-host` 作为 carrier，内层组件根节点数不再影响过渡。
-
-`tests/root-check.js` 会列出当前的多根视图清单，便于日后新增页面时留意。
-（该脚本只作提示，恒返回 0 —— 有 carrier 层兜底，多根本身不影响功能。）
-
----
-
-## 测试
-
-```bash
-node /opt/gh-web/tests/compile-check.js   # 39 个模板语法
-node /opt/gh-web/tests/render-check.js    # jsdom 跑 24 条路由 + 内容断言
-node /opt/gh-web/tests/img-check.js       # Markdown 相对图片/链接的改写（20 项断言）
-node /opt/gh-web/tests/mobile-check.js    # 375px 视口下的列表行回归
-node /opt/gh-web/tests/root-check.js      # 多根视图清单（提示用）
-```
-
-`render-check.js` 会从 `app/views/` **读目录**加载脚本，所以它无法发现
-「`index.html` 漏引某个 view」这类问题。历史上 `views/user.js` 就漏引过，
-导致用户主页错落成概览页。**新增视图后请确认 `index.html` 里也加了对应的 `<script>`。**
-（对照命令：`diff <(grep -oE 'app/views/[a-z]+\.js' web/index.html | sed 's|.*/||' | sort) <(ls web/app/views/*.js | sed 's|.*/||' | sort)`）
-
+MIT

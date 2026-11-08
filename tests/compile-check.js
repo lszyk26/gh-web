@@ -33,7 +33,7 @@ function makeWindow() {
     createElement: () => ({ style: {}, select: () => { }, remove: () => { } })
   };
   w.U = { copy: () => { }, toast: () => { }, num: (n) => n, compact: (n) => n, rel: () => '', relZh: () => '', abs: () => '', size: () => '', bytes: (n) => n, langColor: () => '#000', license: () => '', firstLine: (s) => s, initials: () => 'AB', md: (s) => s, esc: (s) => s, extOf: () => '', baseOf: (s) => s, rawUrl: () => '', store: { get: () => null, set: () => { }, del: () => { }, clear: () => { } }, date: () => '', objectKeys: (o) => Object.keys(o) };
-  w.API = { token: null, onRate: null, get: () => { }, getData: () => { }, req: () => { }, forget: () => { }, links: () => ({}), hasToken: () => false, setToken: () => { }, loadToken: () => { } };
+  w.API = { pat: null, onRate: null, get: () => { }, getData: () => { }, req: () => { }, forget: () => { }, links: () => ({}), setPat: () => { }, loadPat: () => { } };
   return w;
 }
 

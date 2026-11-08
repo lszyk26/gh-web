@@ -114,6 +114,21 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ha, hb);
 }
 
+/* 缓存分桶：不能用原始凭证做键（会明文落盘/驻留内存）。
+   这里与前端 api.js 用同一套 FNV-1a 双路摘要，保证两边算出同一个桶。 */
+function bucketOf(t) {
+  if (!t) return 'anon';
+  let h1 = 0x811c9dc5 >>> 0, h2 = 0x01000193 >>> 0;
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i);
+    h1 = (h1 ^ c) >>> 0;
+    h1 = Math.imul(h1, 0x01000193) >>> 0;
+    h2 = (h2 + Math.imul((c ^ 0x5bf03635) >>> 0, 0x9e3779b1)) >>> 0;
+  }
+  const hex = function (n) { return ('00000000' + (n >>> 0).toString(16)).slice(-8); };
+  return hex(h1) + hex(h2);
+}
+
 function parseCookies(header) {
   const out = {};
   if (!header) return out;
@@ -388,7 +403,9 @@ async function proxyApi(req, res, rawUrl) {
   const upstreamPath = parsed.pathname.replace(/^\/api/, '') + parsed.search;
   const target = API_ORIGIN.replace(/\/$/, '') + upstreamPath;
 
-  const bucket = String(req.headers['x-gh-cache-bucket'] || 'anon').slice(0, 32);
+  const pat = req.headers['x-gh-token'];
+  // 客户端没给桶摘要时，服务端自己按凭证算一个 —— 绝不让不同凭证共用 anon 桶
+  const bucket = String(req.headers['x-gh-cache-bucket'] || bucketOf(pat)).slice(0, 32);
   const bypass = parsed.searchParams.get('nocache') === '1';
   const method = req.method.toUpperCase();
   const cacheable = method === 'GET' || method === 'HEAD';
@@ -431,7 +448,6 @@ async function proxyApi(req, res, rawUrl) {
     'user-agent': 'gh-web/' + VERSION,
     'x-github-api-version': '2022-11-28'
   };
-  const pat = req.headers['x-gh-token'];
   if (pat) headers.authorization = 'Bearer ' + pat;
   if (req.headers['content-type']) headers['content-type'] = req.headers['content-type'];
 
@@ -600,10 +616,11 @@ function main() {
   });
 
   server.listen(PORT, HOST, function () {
+    const actual = server.address().port;
     const scheme = TLS_CERT && TLS_KEY ? 'https' : 'http';
     const shownHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
     log('GH·WEB ' + VERSION + ' 已启动');
-    log('  本机   ' + scheme + '://' + shownHost + ':' + PORT + '/');
+    log('  本机   ' + scheme + '://' + shownHost + ':' + actual + '/');
     log('  站点   ' + ROOT);
     log('  认证   ' + (PASSWORD ? '已开启（Cookie / Basic）' : '未设置（GHW_PASSWORD 可开启）'));
     log('  缓存   ' + CACHE_TTL + 's / ' + CACHE_MAX_MB + 'MB');

@@ -13,7 +13,7 @@
 # ============================================================
 set -euo pipefail
 
-DIR=/opt/ghweb-auth
+DIR="${GHW_AUTH_DIR:-/opt/ghweb-auth}"
 SVC=ghweb-auth
 [[ $EUID -eq 0 ]] || { echo "需要 root"; exit 1; }
 
@@ -25,7 +25,7 @@ import secrets, sys, os
 keep = sys.argv[1] == "1"
 alphabet = "abcdefghjkmnpqrstuvwxyz23456789"   # 避开 0/o/1/l/i
 
-tok = "0lt-" + "-".join("".join(secrets.choice(alphabet) for _ in range(4)) for _ in range(3))
+tok = "ghw-" + "-".join("".join(secrets.choice(alphabet) for _ in range(4)) for _ in range(3))
 fd = os.open("/opt/ghweb-auth/token", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
 with os.fdopen(fd, "w") as f:
     f.write(tok)
@@ -50,4 +50,4 @@ echo
 echo "重启 $SVC 使新 secret 生效…"
 systemctl restart "$SVC"
 sleep 1
-systemctl is-active "$SVC" && echo "完成。打开 https://ghs.0lt.top/login 用新令牌登录。"
+systemctl is-active "$SVC" && echo "完成。打开 https://${GHW_DOMAIN:-你的域名}/login 用新令牌登录。"

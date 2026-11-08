@@ -25,7 +25,7 @@
   }
 
   const API = {
-    token: null,
+    pat: null,
     bucket: 'anon',
     cacheHits: 0,
     cacheMisses: 0,
@@ -34,18 +34,18 @@
   };
 
   /* ---------- token ---------- */
-  API.loadToken = function () {
-    API.token = U.store.get(KEY, null);
-    API.bucket = bucketOf(API.token);
-    return API.token;
+  API.loadPat = function () {
+    API.pat = U.store.get(KEY, null);
+    API.bucket = bucketOf(API.pat);
+    return API.pat;
   };
-  API.setToken = function (t) {
-    API.token = t ? String(t).trim() : null;
-    API.bucket = bucketOf(API.token);
-    if (API.token) U.store.set(KEY, API.token);
+  API.setPat = function (t) {
+    API.pat = t ? String(t).trim() : null;
+    API.bucket = bucketOf(API.pat);
+    if (API.pat) U.store.set(KEY, API.pat);
     else U.store.del(KEY);
   };
-  API.hasToken = function () { return !!API.token; };
+  API.hasPat = function () { return !!API.pat; };
 
   /* ---------- transport ---------- */
   function buildPath(path, params) {
@@ -66,7 +66,7 @@
     const headers = { 'Accept': opts.accept || 'application/vnd.github+json' };
     // 注意：不能用 Authorization 头传 PAT —— 那会和 nginx 的 basic auth 抢同一个头，
     // 结果 basic auth 直接把请求拒掉。所以走自定义头，由 nginx 翻成 Bearer 转发给 GitHub。
-    if (API.token) headers['X-GH-Token'] = API.token;
+    if (API.pat) headers['X-GH-Token'] = API.pat;
     // 缓存命名空间用摘要，原始 token 绝不进入缓存键（否则会明文落盘）
     headers['X-GH-Cache-Bucket'] = API.bucket || 'anon';
     if (opts.headers) Object.keys(opts.headers).forEach(function (k) { headers[k] = opts.headers[k]; });

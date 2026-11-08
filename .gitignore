@@ -52,3 +52,5 @@ tmp/
 uploads/
 venv/
 # <<< server-autobackup (ssh-mcp) <<<
+# 例外：示例配置要能提交（真正的 .env 仍然忽略）
+!.env.example

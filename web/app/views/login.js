@@ -30,7 +30,7 @@
         const t = (this.tok || '').trim();
         if (!t) { this.err = '请填写 Personal Access Token'; return; }
         this.busy = true; this.err = '';
-        API.setToken(t);
+        API.setPat(t);
         try {
           this.probe = await API.me();
           if (!this.remember) {
@@ -41,7 +41,7 @@
           }
           this.$emit('authed');
         } catch (e) {
-          API.setToken(null);
+          API.setPat(null);
           this.err = e.status === 401
             ? 'Token 无效，或缺少必要权限（需要 repo / read:user / notifications）。'
             : '连接失败：' + e.message;
@@ -83,7 +83,7 @@
 '      </div>' +
 '    </div>' +
 '    <div class="login-art-in" style="font-family:var(--mono);font-size:10.5px;opacity:.45;letter-spacing:.05em">' +
-'      ghs.0lt.top · 仅本人使用</div>' +
+'      ' + (location.host || 'GH·WEB') + ' · 自建实例</div>' +
 '  </div>' +
 
 '  <div class="login-form">' +
