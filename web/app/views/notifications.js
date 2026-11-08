@@ -5,6 +5,17 @@
   'use strict';
   const C = window.C;
 
+  /* 本次会话内已标记为已读的通知 id。
+     GitHub 的通知索引有几秒延迟，标记后立刻回源可能又拿到 unread=true，
+     导致「已读」在刷新/翻页后复活。这里记一份本地账，渲染时强制覆盖。 */
+  const READ_KEY = 'ghw.readIds';
+  function localReadIds() {
+    try {
+      const v = JSON.parse(sessionStorage.getItem(READ_KEY) || '[]');
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+
   const Notifications = {
     components: C,
     props: { route: Object, shell: Object },
@@ -40,7 +51,8 @@
           const l = API.links(r);
           self.page = p; self.hasNext = !!l.next; self.hasPrev = p > 1;
           self.$emit('cache', r.cache);
-          self.syncBadge();
+          self.applyLocalRead();          // 覆盖 GitHub 索引延迟导致的 unread 回弹
+          self.resetBadge();
         } catch (e) {
           self.err = e.status === 403 ? 'Token 缺少 notifications 权限' : e.message;
         }
@@ -75,42 +87,64 @@
           invitation: '邀请', push: '推送', participating: '你参与过'
         }[r] || r;
       },
-      /* 侧栏未读角标与列表保持一致 */
-      syncBadge: function () {
+      /* 侧栏角标：只在「全部」视图下用 items 重算（其他 tab 是子集，会把数字算小） */
+      resetBadge: function () {
         if (!this.shell || !this.shell.counts) return;
+        if (this.only !== 'all') return;
         this.shell.counts.notif = this.items.filter(function (n) { return n.unread; }).length;
       },
+      bumpBadge: function (delta) {
+        if (!this.shell || !this.shell.counts) return;
+        this.shell.counts.notif = Math.max(0, (this.shell.counts.notif || 0) + delta);
+      },
+      rememberRead: function (ids) {
+        if (!ids || !ids.length) return;
+        try {
+          const all = localReadIds().concat(ids).slice(-500);
+          sessionStorage.setItem(READ_KEY, JSON.stringify(all));
+        } catch (e) { }
+      },
+      applyLocalRead: function () {
+        const ids = localReadIds();
+        if (!ids.length) return;
+        const set = {};
+        ids.forEach(function (id) { set[id] = 1; });
+        this.items.forEach(function (n) { if (set[n.id]) n.unread = false; });
+      },
       /* 标记动作结束后向 GitHub 复核一次（nocache 绕过 nginx 缓存），
-         否则页面刷新/切页会拿回标记前的旧快照，看起来"已读永远消不掉" */
+         否则刷新/切页会拿回标记前的旧快照 */
       refresh: async function () {
         try {
           const r = await API.notifications(this.page, { all: this.only === 'all' }, true);
           this.items = r.data || [];
+          this.applyLocalRead();
           const l = API.links(r);
           this.hasNext = !!l.next; this.hasPrev = this.page > 1;
           this.$emit('cache', r.cache);
-          this.syncBadge();
-        } catch (e) { /* 静默：本地状态已更新，不打扰用户 */ }
+          this.resetBadge();
+        } catch (e) { /* 静默：本地状态已经更新，不打扰用户 */ }
       },
       /* 点开通知时顺手标已读（与 GitHub 网页行为一致），不阻塞跳转 */
       openRow: function (n) {
         if (!n || !n.unread) return;
         n.unread = false;
-        this.syncBadge();
+        this.bumpBadge(-1);
+        this.rememberRead([n.id]);
         API.markRead(n.id).catch(function () { });
       },
       markRead: async function (n, ev) {
         if (ev) { ev.stopPropagation(); ev.preventDefault(); }
         const was = n.unread;
         n.unread = false;                 // 先给反馈，失败再回滚
-        this.syncBadge();
+        this.bumpBadge(-1);
         try {
           await API.markRead(n.id);
+          this.rememberRead([n.id]);
           U.toast('已标记为已读');
           this.refresh();
         } catch (e) {
           n.unread = was;
-          this.syncBadge();
+          this.bumpBadge(1);
           U.toast('操作失败：' + e.message, 'bad');
         }
       },
@@ -118,7 +152,8 @@
         try {
           await API.markAllRead({ last_read_at: new Date().toISOString() });
           this.items.forEach(function (n) { n.unread = false; });
-          this.syncBadge();
+          this.rememberRead(this.items.map(function (n) { return n.id; }));
+          if (this.shell && this.shell.counts) this.shell.counts.notif = 0;
           U.toast('已全部标记为已读');
           await this.refresh();
         } catch (e) { U.toast('操作失败：' + e.message, 'bad'); }
