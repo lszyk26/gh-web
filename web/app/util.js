@@ -189,7 +189,7 @@
       .replace(/<\s*(script|iframe|object|embed|form|style|link|meta)[^>]*>/gi, '')
       .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
       .replace(/javascript:/gi, '');
-    return U.rewriteImg(U.rewriteLinks(html));
+    return U.addHeadingIds(U.rewriteImg(U.rewriteLinks(html)));
   };
 
   /* ---------- markdown 里的相对图片 ---------- */
@@ -203,8 +203,8 @@
 
   // 传 owner+repo 即设置上下文；传空即清除（表示「这段 Markdown 不属于任何仓库」，
   // 此时靠 ctxFromHash 兜底）。组件每次渲染都会调一次，所以上下文不会串到别处。
-  U.imgContext = function (o, r, ref) {
-    imgCtx = (o && r) ? { o: o, r: r, ref: ref || 'HEAD' } : null;
+  U.imgContext = function (o, r, ref, path) {
+    imgCtx = (o && r) ? { o: o, r: r, ref: ref || 'HEAD', path: path || '' } : null;
     return imgCtx;
   };
 
@@ -215,9 +215,15 @@
     const h = String((window.location && window.location.hash) || '').replace(/^#\/?/, '');
     const parts = h.split('/').filter(function (x) { return x !== ''; }).map(decodeURIComponent);
     if (parts.length < 2 || RESERVED.indexOf(parts[0]) >= 0) return null;
-    const ctx = { o: parts[0], r: parts[1], ref: 'HEAD' };
-    if (parts[2] === 'code') { if (parts[4]) ctx.ref = parts[4]; }
-    else if (parts[2] === 'tree' || parts[2] === 'blob') { if (parts[3]) ctx.ref = parts[3]; }
+    const ctx = { o: parts[0], r: parts[1], ref: 'HEAD', path: '' };
+    if (parts[2] === 'code') {
+      if (parts[4]) ctx.ref = parts[4];
+      ctx.path = parts.slice(5).join('/');
+    }
+    else if (parts[2] === 'tree' || parts[2] === 'blob') {
+      if (parts[3]) ctx.ref = parts[3];
+      ctx.path = parts.slice(4).join('/');
+    }
     return ctx;
   };
 
@@ -253,28 +259,81 @@
   // 相对链接同理：README 里的 [说明](assets/x.md)、[文档](references/01.md)
   // 在 SPA 里会跳到本站路径，命中 SPA 兜底 → 页面错乱。统一指向 GitHub。
   // 目录链接一律给 /blob/，GitHub 会自己 301 到 /tree/。
+  // 把 ./a/../b 归一化
+  function normPath(p) {
+    const out = [];
+    String(p).split('/').forEach(function (seg) {
+      if (!seg || seg === '.') return;
+      if (seg === '..') { out.pop(); return; }
+      out.push(seg);
+    });
+    return out.join('/');
+  }
+
+  // README 里的相对链接【留在本站】
+  //   早先是统统指向 github.com 的，结果点「简体中文」这种语言切换链接会直接跳出镜像站；
+  //   现在改走 hash 路由 #/owner/repo/code/{blob|tree}/ref/path。
+  // 裸锚点（#安装）不能返回 #xxx —— 那会把 hash 路由整个顶掉，交给 Markdown 组件拦截点击后滚动。
   U.resolveLinkHref = function (href) {
     const raw = String(href == null ? '' : href).trim();
     if (!raw) return '';
-    if (/^(https?:|data:|blob:|mailto:|tel:|#|\/\/)/i.test(raw)) return raw;
-    let frag = '';
+    if (raw.charAt(0) === '#') return raw;
+    const ctx = imgCtx || U.ctxFromHash();
+
+    // README 里写死的本仓库绝对链接也拉回站内
+    const ghm = /^https?:\/\/(?:www\.)?github\.com\/([^\/?#]+)\/([^\/?#]+)(\/[^?#]*)?/i.exec(raw);
+    if (ghm && ctx && ghm[1].toLowerCase() === String(ctx.o).toLowerCase() &&
+        ghm[2].replace(/\.git$/i, '').toLowerCase() === String(ctx.r).toLowerCase()) {
+      const m2 = /^\/(blob|tree)\/([^\/]+)\/(.*)$/i.exec(ghm[3] || '');
+      if (m2) {
+        return '#/' + ctx.o + '/' + ctx.r + '/code/' + m2[1].toLowerCase() + '/' +
+          encodeURIComponent(m2[2]) +
+          (m2[3] ? '/' + m2[3].split('/').map(encodeURIComponent).join('/') : '');
+      }
+    }
+
+    if (/^(https?:|data:|blob:|mailto:|tel:|\/\/)/i.test(raw)) return raw;
+
     let body = raw;
     const hi = body.indexOf('#');
-    if (hi >= 0) { frag = body.slice(hi); body = body.slice(0, hi); }
-    const q = body.indexOf('?');
+    if (hi >= 0) body = body.slice(0, hi);      // hash 路由里没法再嵌锚点，丢弃片段
     let query = '';
-    if (q >= 0) { query = body.slice(q); body = body.slice(0, q); }
-    const path = body.replace(/^\.\//, '').replace(/^\//, '');
-    const ctx = imgCtx || U.ctxFromHash();
-    const enc = path.split('/').map(encodeURIComponent).join('/');
-    if (!ctx) return 'https://github.com/' + enc + frag;
-    return 'https://github.com/' + ctx.o + '/' + ctx.r + '/blob/' +
-      encodeURIComponent(ctx.ref) + '/' + enc + query + frag;
+    const qi = body.indexOf('?');
+    if (qi >= 0) { query = body.slice(qi); body = body.slice(0, qi); }
+    const isDir = /\/$/.test(body);
+    let path = body.charAt(0) === '/'
+      ? body.replace(/^\/+/, '')
+      : normPath((ctx && ctx.path ? U.dirOf(ctx.path) : '') + '/' + body);
+    path = path.replace(/\/+$/, '');
+    const enc = path.split('/').filter(function (x) { return x !== ''; }).map(encodeURIComponent).join('/');
+    if (!ctx) return 'https://github.com/' + enc;
+    return '#/' + ctx.o + '/' + ctx.r + '/code/' + (isDir ? 'tree' : 'blob') + '/' +
+      encodeURIComponent(ctx.ref || 'HEAD') + (enc ? '/' + enc : '') + query;
   };
   U.rewriteLinks = function (html) {
     return String(html || '').replace(/(<a\b[^>]*?)\shref=(["'])([^"']*)\2/gi, function (m, head, q, href) {
       const abs = U.resolveLinkHref(href);
       return abs === href ? m : head + ' href=' + q + abs + q;
+    });
+  };
+
+  /* ---------- 标题锚点 ---------- */
+  // marked v12 默认 headerIds:false，不生成 id；README 目录里的 [安装](#安装) 就没法跳。
+  // 这里按 GitHub 的 slug 规则补上 id，并给重复标题加 -1/-2 后缀。
+  U.slugify = function (s) {
+    let t = String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/&[a-z#0-9]+;/gi, '').trim().toLowerCase();
+    try { t = t.replace(/[^\p{L}\p{N}\s_-]/gu, ''); }
+    catch (e) { t = t.replace(/[^\w\s\u4e00-\u9fa5-]/g, ''); }
+    return t.replace(/\s+/g, '-') || 'section';
+  };
+  U.addHeadingIds = function (html) {
+    const seen = Object.create(null);
+    return String(html || '').replace(/<h([1-6])([^>]*)>([\s\S]*?)<\/h\1>/gi, function (m, lvl, attrs, inner) {
+      if (/\sid\s*=/.test(attrs)) return m;
+      const base = U.slugify(inner);
+      const id = seen[base] ? base + '-' + seen[base] : base;
+      seen[base] = (seen[base] || 0) + 1;
+      return '<h' + lvl + attrs + ' id="' + id + '">' + inner + '</h' + lvl + '>';
     });
   };
 

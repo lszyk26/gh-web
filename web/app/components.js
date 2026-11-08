@@ -126,18 +126,32 @@
     // 相对路径图片要靠它换算成 raw 绝对地址（见 U.resolveImgSrc）
     // 注意：不能用 ref 当 prop 名 —— ref 是 Vue 的保留属性（模板引用），
     // 写在组件上不会作为 prop 传进去，只会静默丢失。所以这里叫 branch。
-    props: { source: String, owner: String, repo: String, branch: String },
+    props: { source: String, owner: String, repo: String, branch: String, path: String },
     computed: {
       html: function () {
-        // 先设上下文再解析，保证 U.rewriteImg 拿得到仓库信息
-        U.imgContext(this.owner, this.repo, this.branch);
+        // 先设上下文再解析，保证 U.rewriteImg / U.rewriteLinks 拿得到仓库+当前文件信息
+        U.imgContext(this.owner, this.repo, this.branch, this.path);
         let h = U.md(this.source || '');
         // make gh issue refs / user mentions quieter links
         h = h.replace(/<a href="(https?:\/\/[^"]+)"/g, '<a target="_blank" rel="noopener noreferrer" href="$1"');
         return h;
       }
     },
-    template: '<div class="md" v-html="html"></div>'
+    methods: {
+      // README 里的 [xx](#标题) 不能让它改 hash —— 那会把 SPA 路由顶掉，改成滚动到标题
+      onClick: function (e) {
+        const a = e.target && e.target.closest ? e.target.closest('a') : null;
+        if (!a) return;
+        const href = a.getAttribute('href') || '';
+        if (href.charAt(0) !== '#' || href.charAt(1) === '/') return;  // '#/owner/...' 是站内路由，正常跳
+        e.preventDefault();
+        let id = href.slice(1);
+        try { id = decodeURIComponent(id); } catch (err) { }
+        const el = document.getElementById(id) || document.getElementById(U.slugify(id));
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    },
+    template: '<div class="md" v-html="html" @click="onClick"></div>'
   };
 
   /* ---------- code block with line numbers ---------- */
