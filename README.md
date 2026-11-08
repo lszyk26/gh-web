@@ -289,7 +289,7 @@ node tests/render-check.js         # jsdom 跑全部路由 + 内容断言
 node tests/render-check.js '#/some/route'
 node tests/img-check.js            # Markdown 相对图片/链接的改写
 node tests/mobile-check.js         # 375px 视口下的列表行回归
-node tests/server-check.js         # 服务器端到端：静态/口令/代理/缓存（22 项断言）
+node tests/server-check.js         # 服务器端到端：静态/口令/代理/缓存（23 项断言）
 node tests/root-check.js           # 多根视图清单（提示用）
 ```
 

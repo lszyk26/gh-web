@@ -107,6 +107,11 @@ async function main() {
     ok('未登录访问 API -> 401 JSON',
       r.status === 401 && (r.headers.get('content-type') || '').includes('application/json'), r.status);
 
+    r = await fetch(base + '/healthz');
+    const healthAnon = await r.json();
+    ok('健康检查免鉴权（供 Docker / 监控探活）',
+      r.status === 200 && healthAnon.ok === true, r.status + ' ' + JSON.stringify(healthAnon));
+
     r = await fetch(base + '/login');
     const loginHtml = await r.text();
     ok('登录页可访问', r.status === 200 && loginHtml.indexOf('GH·WEB') >= 0, r.status);

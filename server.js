@@ -520,6 +520,16 @@ async function handle(req, res) {
     return res.end();
   }
 
+  // 健康检查：不鉴权，供 Docker / 监控探活（只暴露版本与缓存计数）
+  if (pathname === '/healthz') {
+    return json(res, 200, {
+      ok: true,
+      version: VERSION,
+      auth: !!PASSWORD,
+      cache: { entries: apiCache.size, bytes: apiCacheBytes }
+    });
+  }
+
   // 鉴权
   if (!isAuthed(req)) {
     if (pathname.startsWith('/api/')) {
@@ -531,15 +541,6 @@ async function handle(req, res) {
     }
     return send(res, 401, '需要先登录', {
       'WWW-Authenticate': 'Basic realm="gh-web", charset="UTF-8"'
-    });
-  }
-
-  if (pathname === '/healthz') {
-    return json(res, 200, {
-      ok: true,
-      version: VERSION,
-      auth: !!PASSWORD,
-      cache: { entries: apiCache.size, bytes: apiCacheBytes }
     });
   }
 
