@@ -162,7 +162,12 @@ gh.example.com {
 
 `deploy/gh-web.conf` 是本站线上在用的配置：nginx 直接反代 `api.github.com` 并用 `proxy_cache` 落盘缓存，静态资源也由 nginx 直出，性能比 Node 中转略好。它依赖一个额外的免密登录服务（`auth_request`），不是开箱即用，适合想深度定制的人参考。
 
-`deploy/install.sh` 是配套的幂等安装脚本（`--with-cert` 首次签发证书）。
+`deploy/install.sh` 是配套的幂等安装脚本：域名与路径通过环境变量传入，配置文件里的 `__DOMAIN__` / `__ROOT__` 会被自动替换。
+
+```bash
+GHW_DOMAIN=gh.example.com sudo -E bash deploy/install.sh              # 常规安装/更新
+GHW_DOMAIN=gh.example.com sudo -E bash deploy/install.sh --with-cert  # 首次签发证书
+```
 
 ### 配置项
 
