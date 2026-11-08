@@ -40,6 +40,16 @@
     },
     created: function () { this.load(1); },
     methods: {
+      /* 与 issues.js 共用同一套文字色算法：原色当文字色时，
+         浅色 label（灰/黄/青）在 12% 淡底上等于隐形 */
+      labelStyle: function (l) {
+        if (!l || !l.color) return {};
+        return {
+          background: '#' + l.color + '1f',
+          borderColor: '#' + l.color + '55',
+          color: '#' + (window.__shade ? window.__shade(l.color) : '6c6862')
+        };
+      },
       load: async function (p) {
         this.loading = true; this.err = '';
         const self = this;
@@ -130,8 +140,7 @@
 '            <template v-if="it.comments"><span>·</span>' +
 '              <span><icon name="comment" :size="11"></icon> {{ it.comments }}</span></template></div>' +
 '          <div v-if="it.labels && it.labels.length" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px">' +
-'            <span v-for="l in it.labels.slice(0, 6)" :key="l.id" class="lbl" ' +
-'                  :style="{background: \'#\' + l.color + \'1f\', borderColor: \'#\' + l.color + \'55\', color: \'#\' + l.color}">' +
+'            <span v-for="l in it.labels.slice(0, 6)" :key="l.id" class="lbl" :style="labelStyle(l)">' +
 '              <span class="dot"></span>{{ l.name }}</span></div>' +
 '        </div>' +
 '        <div v-if="it.assignee" class="row-side">' +
