@@ -199,7 +199,8 @@
           const l = API.links(r);
           self.counts.stars = l.last ? l.last * 30 : (r.data ? r.data.length : 0);
         }).catch(function () { });
-        API.notifications(1).then(function (r) {
+        // fresh=true：未读角标必须实时，不能被 /api/ 的 5 分钟缓存拖住
+        API.notifications(1, null, true).then(function (r) {
           self.counts.notif = (r.data || []).length;
         }).catch(function () { });
       },

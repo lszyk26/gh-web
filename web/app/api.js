@@ -164,8 +164,13 @@
     return API.get('/user/starred', { per_page: 30, page: page || 1, sort: 'created' });
   };
   API.following = function () { return API.getData('/user/following', { per_page: 100 }); };
-  API.notifications = function (page, opts) {
-    return API.get('/notifications', Object.assign({ per_page: 30, page: page || 1 }, opts || {}), { noMem: true });
+  // fresh=true 时带 nocache=1：nginx 对该参数 bypass 缓存且不回写缓存。
+  // 通知是强实时数据，标记已读后必须拿到 GitHub 的最新状态，
+  // 否则会被 5 分钟的 API 缓存"续命"，表现为已读永远消不掉（2026-11-08 修复）。
+  API.notifications = function (page, opts, fresh) {
+    const p = Object.assign({ per_page: 30, page: page || 1 }, opts || {});
+    if (fresh) p.nocache = 1;
+    return API.get('/notifications', p, { noMem: true, force: true });
   };
   API.repo = function (o, r) { return API.getData('/repos/' + o + '/' + r); };
   API.readme = function (o, r, ref) {

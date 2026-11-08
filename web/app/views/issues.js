@@ -178,16 +178,23 @@
 '</div>'
   };
 
-  /* darken/lighten a hex a bit so label text stays readable on tinted bg */
+  /* label 文字色。
+     前景是原色的 12%（叠在白纸上，非常浅），所以文字必须明显更深才有对比。
+     旧实现把「亮色压暗、暗色提亮」：深色 label（如 bug #d73a4a）被提亮到接近白色，
+     配浅粉底等于隐形，列表里只剩一个空色块（2026-11-08 反馈的「议题界面显示异常」）。
+     现在统一把颜色按明度压到 ~0.28，暗色保持原样，任何色值在淡底上都可读。 */
   function shade(hex) {
     try {
-      const n = parseInt(hex, 16);
+      let h = String(hex || '').replace(/^#/, '');
+      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      if (!/^[0-9a-fA-F]{6}$/.test(h)) return '6c6862';
+      const n = parseInt(h, 16);
       let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
       const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      if (lum > 0.62) { r = Math.round(r * .42); g = Math.round(g * .42); b = Math.round(b * .42); }
-      else { r = Math.round(255 - (255 - r) * .12); g = Math.round(255 - (255 - g) * .12); b = Math.round(255 - (255 - b) * .12); }
+      const k = lum > 0.28 ? 0.28 / lum : 1;
+      r = Math.round(r * k); g = Math.round(g * k); b = Math.round(b * k);
       return [r, g, b].map(function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
-    } catch (e) { return hex; }
+    } catch (e) { return '6c6862'; }
   }
   window.__shade = shade;
 

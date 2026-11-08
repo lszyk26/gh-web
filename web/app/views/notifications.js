@@ -31,15 +31,16 @@
     },
     created: function () { this.load(1); },
     methods: {
-      load: async function (p) {
+      load: async function (p, fresh) {
         this.loading = true; this.err = '';
         const self = this;
         try {
-          const r = await API.notifications(p, { all: this.only === 'all' });
+          const r = await API.notifications(p, { all: this.only === 'all' }, fresh);
           self.items = r.data || [];
           const l = API.links(r);
           self.page = p; self.hasNext = !!l.next; self.hasPrev = p > 1;
           self.$emit('cache', r.cache);
+          self.syncBadge();
         } catch (e) {
           self.err = e.status === 403 ? 'Token 缺少 notifications 权限' : e.message;
         }
@@ -74,21 +75,52 @@
           invitation: '邀请', push: '推送', participating: '你参与过'
         }[r] || r;
       },
+      /* 侧栏未读角标与列表保持一致 */
+      syncBadge: function () {
+        if (!this.shell || !this.shell.counts) return;
+        this.shell.counts.notif = this.items.filter(function (n) { return n.unread; }).length;
+      },
+      /* 标记动作结束后向 GitHub 复核一次（nocache 绕过 nginx 缓存），
+         否则页面刷新/切页会拿回标记前的旧快照，看起来"已读永远消不掉" */
+      refresh: async function () {
+        try {
+          const r = await API.notifications(this.page, { all: this.only === 'all' }, true);
+          this.items = r.data || [];
+          const l = API.links(r);
+          this.hasNext = !!l.next; this.hasPrev = this.page > 1;
+          this.$emit('cache', r.cache);
+          this.syncBadge();
+        } catch (e) { /* 静默：本地状态已更新，不打扰用户 */ }
+      },
+      /* 点开通知时顺手标已读（与 GitHub 网页行为一致），不阻塞跳转 */
+      openRow: function (n) {
+        if (!n || !n.unread) return;
+        n.unread = false;
+        this.syncBadge();
+        API.markRead(n.id).catch(function () { });
+      },
       markRead: async function (n, ev) {
-        ev.stopPropagation(); ev.preventDefault();
+        if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+        const was = n.unread;
+        n.unread = false;                 // 先给反馈，失败再回滚
+        this.syncBadge();
         try {
           await API.markRead(n.id);
-          n.unread = false;
           U.toast('已标记为已读');
-          if (this.shell) this.shell.counts.notif = Math.max(0, (this.shell.counts.notif || 1) - 1);
-        } catch (e) { U.toast('操作失败：' + e.message, 'bad'); }
+          this.refresh();
+        } catch (e) {
+          n.unread = was;
+          this.syncBadge();
+          U.toast('操作失败：' + e.message, 'bad');
+        }
       },
       markAll: async function () {
         try {
           await API.markAllRead({ last_read_at: new Date().toISOString() });
           this.items.forEach(function (n) { n.unread = false; });
+          this.syncBadge();
           U.toast('已全部标记为已读');
-          if (this.shell) this.shell.counts.notif = 0;
+          await this.refresh();
         } catch (e) { U.toast('操作失败：' + e.message, 'bad'); }
       },
       mute: async function (n, ev) {
@@ -133,7 +165,7 @@
 
 '  <div v-else class="card">' +
 '    <div class="row-list">' +
-'      <a v-for="n in shown" :key="n.id" class="row" :href="href(n)" ' +
+'      <a v-for="n in shown" :key="n.id" class="row" :href="href(n)" @click="openRow(n)" ' +
 '         :style="{background: n.unread ? \'var(--accent-soft)\' : \'\'}">' +
 '        <span class="tl-dot" :class="{on: n.unread}" style="position:static;margin-top:7px"></span>' +
 '        <div class="row-main">' +
