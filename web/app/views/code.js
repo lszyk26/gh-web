@@ -124,12 +124,6 @@
             self.file = data; self.fileText = ''; self.err = '';
           }
         } catch (e) {
-          // README 里指向目录的相对链接会被猜成 blob，GitHub 对目录返回 404 → 自动切 tree
-          if (e.status === 404 && self.mode === 'blob' && self.path) {
-            self.loading = false;
-            self.$emit('nav', self.treeHref(self.path.replace(/\/+$/, '')));
-            return;
-          }
           this.err = e.status === 404 ? '路径不存在，或当前分支下没有这个文件'
             : (e.status === 403 ? '接口限流或 Token 权限不足' : e.message);
         }
