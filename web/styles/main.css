@@ -564,7 +564,9 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
 /* 折叠：grid-template-rows 0fr ↔ 1fr，纯 CSS 高度过渡，无需测高度 */
 .fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--dur-3) var(--ease)}
 .fold.open{grid-template-rows:1fr}
-.fold > .fold-inner{overflow:hidden;min-height:0}
+.fold > .fold-inner{overflow:hidden;min-height:0;visibility:hidden;
+  transition:visibility 0s linear var(--dur-3)}
+.fold.open > .fold-inner{visibility:visible;transition-delay:0s}
 .chev{transition:transform var(--dur-2) var(--ease)}
 .chev.up{transform:rotate(180deg)}
 
@@ -622,3 +624,7 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
   .btn:active{transform:none}
   .row:hover{padding-left:14px}
 }
+
+/* 登录页左侧深色面板固定深色：否则暗色主题下 --ink 翻白，面板会变成一块亮片 */
+.login-art{background:#171614;color:#fbfaf7}
+.login-art .eyebrow,.login-art .dim{color:#b9b3a7}

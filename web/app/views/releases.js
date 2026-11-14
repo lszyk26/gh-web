@@ -147,16 +147,16 @@
 '        </div>' +
 '        <div v-if="rel.assets.length" class="row-list" style="border-top:1px solid var(--rule)">' +
 '          <a v-for="a in headAssets(rel)" :key="a.id" class="row row-primary" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
-'            <icon name="package" :size="14" style="color:var(--accent);margin-top:2px"></icon>' +
-'            <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:600">{{ a.name }}</span></div>' +
-'              <div class="row-meta"><span>{{ U.bytes(a.size) }}</span><span>·</span><span>下载 {{ U.num(a.download_count) }}</span></div></div>' +
-'            <icon name="download" :size="14" style="color:var(--ink-4)"></icon></a>' +
+'            <icon name="package" :size="14" style="color:var(--accent);margin-top:1px"></icon>' +
+'            <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:600">{{ a.name }}</span></div></div>' +
+'            <span class="xs dimmer tnum" style="flex:none">{{ U.bytes(a.size) }}</span>' +
+'            <span class="btn btn-sm" style="flex:none">下载</span></a>' +
 '          <div class="fold" :class="{open: rel._showAll}"><div class="fold-inner">' +
 '            <a v-for="a in restAssets(rel)" :key="a.id" class="row row-sub" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
-'              <icon name="package" :size="14" style="color:var(--ink-4);margin-top:2px"></icon>' +
-'              <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:500">{{ a.name }}</span></div>' +
-'                <div class="row-meta"><span>{{ U.bytes(a.size) }}</span><span>·</span><span>下载 {{ U.num(a.download_count) }}</span></div></div>' +
-'              <icon name="download" :size="14" style="color:var(--ink-4)"></icon></a>' +
+'              <icon name="package" :size="14" style="color:var(--ink-4);margin-top:1px"></icon>' +
+'              <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:500">{{ a.name }}</span></div></div>' +
+'              <span class="xs dimmer tnum" style="flex:none">{{ U.bytes(a.size) }}</span>' +
+'              <icon name="download" :size="13" style="color:var(--ink-4)"></icon></a>' +
 '          </div></div>' +
 '          <div v-if="rel.assets.length > 4" class="row" style="justify-content:center;cursor:pointer;color:var(--accent-deep)" @click="toggleAssets(rel)">' +
 '            <span class="sm" style="font-weight:600">{{ rel._showAll ? \'收起附件\' : \'其余 \' + (rel.assets.length - 4) + \' 个文件（签名 / 校验等）\' }}</span>' +
