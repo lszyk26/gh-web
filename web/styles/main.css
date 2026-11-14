@@ -105,15 +105,15 @@ h1{font-size:23px}h2{font-size:18px}h3{font-size:15px}
 .content{padding:22px;max-width:1280px;width:100%}
 
 /* ---------- primitives ---------- */
-.card{background:#fff;border:1px solid var(--rule);border-radius:8px;box-shadow:var(--raised)}
-.card-flat{background:#fff;border:1px solid var(--rule);border-radius:8px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:8px;box-shadow:var(--raised)}
+.card-flat{background:var(--surface);border:1px solid var(--rule);border-radius:8px}
 .card-head{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--rule)}
 .card-head h3{font-size:13px;font-weight:600}
 .card-body{padding:14px}
 .card-pad{padding:14px}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  height:31px;padding:0 12px;border:1px solid var(--rule-2);border-radius:6px;background:#fff;
+  height:31px;padding:0 12px;border:1px solid var(--rule-2);border-radius:6px;background:var(--surface);
   font-size:12.5px;font-weight:500;cursor:pointer;color:var(--ink-2);white-space:nowrap;
   transition:background .1s,border-color .1s,color .1s}
 .btn:hover{background:var(--paper-2);border-color:var(--rule-3);color:var(--ink)}
@@ -129,7 +129,7 @@ h1{font-size:23px}h2{font-size:18px}h3{font-size:15px}
 .btn-sm{height:26px;padding:0 9px;font-size:11.5px}
 .btn-sm .ic{width:12px;height:12px}
 
-.input{height:32px;padding:0 10px;border:1px solid var(--rule-2);border-radius:6px;background:#fff;
+.input{height:32px;padding:0 10px;border:1px solid var(--rule-2);border-radius:6px;background:var(--surface);
   font-size:13px;width:100%;transition:border-color .1s,box-shadow .1s}
 .input:focus{outline:none;border-color:var(--ink-3);box-shadow:0 0 0 3px var(--paper-3)}
 .input::placeholder{color:var(--ink-4)}
@@ -163,7 +163,7 @@ textarea.input{height:auto;padding:8px 10px;resize:vertical;line-height:1.55}
   border:1px solid var(--rule);border-radius:4px;padding:0 5px;line-height:16px}
 .tab.on .n{background:var(--paper);color:var(--ink-3)}
 
-.seg{display:inline-flex;border:1px solid var(--rule-2);border-radius:6px;overflow:hidden;background:#fff}
+.seg{display:inline-flex;border:1px solid var(--rule-2);border-radius:6px;overflow:hidden;background:var(--surface)}
 .seg > button{padding:0 11px;height:28px;background:transparent;border:0;cursor:pointer;
   font-size:12px;color:var(--ink-3)}
 .seg > button + button{border-left:1px solid var(--rule)}
@@ -219,7 +219,7 @@ textarea.input{height:auto;padding:8px 10px;resize:vertical;line-height:1.55}
 .banner-bad{background:var(--alarm-soft);border-color:#f2d0c6;color:var(--accent-deep)}
 
 /* ---------- dropdown ---------- */
-.pop{position:absolute;z-index:120;background:#fff;border:1px solid var(--rule-2);
+.pop{position:absolute;z-index:120;background:var(--surface);border:1px solid var(--rule-2);
   border-radius:8px;box-shadow:var(--raised-2);padding:5px;min-width:190px}
 .pop-item{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:5px;
   cursor:pointer;font-size:13px;color:var(--ink-2)}
@@ -241,7 +241,7 @@ textarea.input{height:auto;padding:8px 10px;resize:vertical;line-height:1.55}
 .md a:hover{text-decoration-color:var(--accent)}
 .md code{font-family:var(--mono);font-size:12.5px;background:var(--paper-3);
   padding:1.5px 5px;border-radius:4px;border:1px solid var(--rule)}
-.md pre{background:#fff;border:1px solid var(--rule);border-radius:7px;padding:12px 13px;
+.md pre{background:var(--surface);border:1px solid var(--rule);border-radius:7px;padding:12px 13px;
   overflow:auto;margin:12px 0}
 .md pre code{background:none;border:0;padding:0;font-size:12.5px;line-height:1.6}
 .md ul,.md ol{margin:11px 0;padding-left:22px}
@@ -255,20 +255,20 @@ textarea.input{height:auto;padding:8px 10px;resize:vertical;line-height:1.55}
 .md .task{list-style:none;margin-left:-18px}
 
 /* ---------- code (highlight.js, warm paper) ---------- */
-.code-block{background:#fff;border:1px solid var(--rule);border-radius:7px;overflow:hidden;margin:0}
+.code-block{background:var(--surface);border:1px solid var(--rule);border-radius:7px;overflow:hidden;margin:0}
 .code-head{display:flex;align-items:center;gap:9px;padding:7px 11px;background:var(--paper-2);
   border-bottom:1px solid var(--rule);font-size:11.5px}
 .code-head .path{font-family:var(--mono);color:var(--ink-2);flex:1;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .code-scroll{overflow:auto;max-height:none}
 table.code{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:12.5px;line-height:1.65}
-table.code td{border:0;padding:0;vertical-align:top;background:#fff}
+table.code td{border:0;padding:0;vertical-align:top;background:var(--surface)}
 table.code td.ln{width:1%;text-align:right;padding:0 11px 0 13px;color:var(--rule-3);
-  user-select:none;background:#fff;border-right:1px solid var(--rule)}
+  user-select:none;background:var(--surface);border-right:1px solid var(--rule)}
 table.code td.src{padding:0 14px 0 13px;white-space:pre;width:100%}
 table.code tr:hover td{background:var(--paper-2)}
 table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
-.hljs{background:#fff;color:var(--ink);display:block}
+.hljs{background:var(--surface);color:var(--ink);display:block}
 .hljs-comment,.hljs-quote{color:#a39c8f;font-style:italic}
 .hljs-keyword,.hljs-selector-tag,.hljs-literal,.hljs-type{color:#9a3412}
 .hljs-string,.hljs-attr,.hljs-addition,.hljs-regexp{color:#3f6212}
@@ -323,7 +323,7 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
 .stars .ic{width:12px;height:12px;color:var(--warn)}
 
 /* ---------- misc ---------- */
-.kpi{border:1px solid var(--rule);border-radius:8px;background:#fff;padding:13px 15px;box-shadow:var(--raised)}
+.kpi{border:1px solid var(--rule);border-radius:8px;background:var(--surface);padding:13px 15px;box-shadow:var(--raised)}
 .kpi .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-4)}
 .kpi .v{font-family:var(--mono);font-size:24px;font-weight:500;letter-spacing:-.03em;margin-top:5px;line-height:1.1}
 .kpi .m{font-size:11.5px;color:var(--ink-4);margin-top:3px}
@@ -355,7 +355,7 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
 .login-art{background:var(--ink);color:var(--paper);padding:44px;display:flex;
   flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
 .login-grid{position:absolute;inset:0;opacity:.13;
-  background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);
+  background-image:linear-gradient(currentColor 1px,transparent 1px),linear-gradient(90deg,currentColor 1px,transparent 1px);
   background-size:26px 26px}
 .login-art-in{position:relative;z-index:2}
 .login-form{display:grid;place-items:center;padding:32px}
@@ -503,4 +503,122 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
   .hide-sm{display:none !important}
   .topbar{padding:0 14px;gap:9px}
   .crumb{font-size:12.5px}
+}
+
+/* ============================================================
+   2026-11-14 · 动效系统 + 暗色主题（跟随系统）
+   原则：位移不超过 9px、时长 120~320ms、缓动统一；
+   触屏不粘 hover、尊重 prefers-reduced-motion。
+   ============================================================ */
+
+/* ---------- 表面色（此前是散落的 background:#fff） ---------- */
+:root{ --surface:#fff; }
+
+/* ---------- 动效令牌 ---------- */
+:root{
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --dur-1:120ms; --dur-2:200ms; --dur-3:320ms;
+}
+
+/* 列表错峰入场：容器加 .stagger，子项按序淡入上浮 */
+.stagger > *{animation:rise var(--dur-3) var(--ease-out) backwards}
+.stagger > *:nth-child(1){animation-delay:0ms}
+.stagger > *:nth-child(2){animation-delay:28ms}
+.stagger > *:nth-child(3){animation-delay:56ms}
+.stagger > *:nth-child(4){animation-delay:84ms}
+.stagger > *:nth-child(5){animation-delay:112ms}
+.stagger > *:nth-child(6){animation-delay:140ms}
+.stagger > *:nth-child(7){animation-delay:168ms}
+.stagger > *:nth-child(8){animation-delay:196ms}
+.stagger > *:nth-child(9){animation-delay:224ms}
+.stagger > *:nth-child(n+10){animation-delay:252ms}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+
+/* 骨架 → 内容 交叉淡入，避免硬切 */
+.fade-in{animation:fadeIn var(--dur-2) var(--ease-out) backwards}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* 卡片 hover：抬 1px + 阴影加深。只在精确指针设备上启用，触屏不粘 */
+@media(hover:hover){
+  .card,.card-flat,.kpi{
+    transition:transform var(--dur-2) var(--ease),box-shadow var(--dur-2) var(--ease),
+               border-color var(--dur-2) var(--ease)}
+  .card:hover{transform:translateY(-1px);box-shadow:var(--raised-2);border-color:var(--rule-2)}
+  .card-flat:hover{border-color:var(--rule-2)}
+}
+
+/* 行：hover 背景 + 左侧微移，行尾图标往右滑并染成主色 */
+.row{transition:background var(--dur-1) ease,padding-left var(--dur-2) var(--ease)}
+.row > .ic:last-child{transition:transform var(--dur-2) var(--ease),color var(--dur-2) var(--ease)}
+@media(hover:hover){
+  .row:hover{padding-left:18px}
+  .row:hover > .ic:last-child{transform:translateX(2px);color:var(--accent)}
+}
+
+/* 按钮：按下有 1px 反馈；键盘焦点统一可见环 */
+.btn{transition:background var(--dur-1),border-color var(--dur-1),color var(--dur-1),transform var(--dur-1)}
+.btn:active{transform:translateY(1px)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* 折叠：grid-template-rows 0fr ↔ 1fr，纯 CSS 高度过渡，无需测高度 */
+.fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--dur-3) var(--ease)}
+.fold.open{grid-template-rows:1fr}
+.fold > .fold-inner{overflow:hidden;min-height:0}
+.chev{transition:transform var(--dur-2) var(--ease)}
+.chev.up{transform:rotate(180deg)}
+
+/* 版本号 chip */
+.chip{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 9px;border-radius:6px;
+  font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:-.01em;
+  background:var(--paper-2);border:1px solid var(--rule);color:var(--ink-2);
+  transition:background var(--dur-1),border-color var(--dur-1),color var(--dur-1)}
+.chip:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-deep)}
+
+/* 附件：安装包一行强调，校验文件弱化 */
+.row-primary .row-title .t{font-weight:600;color:var(--ink)}
+.row-sub .row-title .t{color:var(--ink-3)}
+
+/* 两行截断（列表页更新说明摘要） */
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ---------- 暗色主题 ---------- */
+@media(prefers-color-scheme:dark){
+  :root{
+    color-scheme:dark;
+    --paper:#151412; --paper-2:#1a1917; --paper-3:#242320;
+    --surface:#1c1b19;
+    --ink:#eceae4; --ink-2:#cbc8c1; --ink-3:#98948b; --ink-4:#736f66;
+    --rule:#2c2a26; --rule-2:#393632; --rule-3:#4a4641;
+    --accent:#e2683c; --accent-soft:#2a1c15; --accent-deep:#f08a5c;
+    --ok:#93b45c; --ok-soft:#1d2416; --warn:#cfa04a; --alarm:#e26a4c; --alarm-soft:#2a1915;
+    --raised:0 1px 2px rgba(0,0,0,.45),0 4px 14px -8px rgba(0,0,0,.7);
+    --raised-2:0 2px 8px rgba(0,0,0,.55),0 18px 40px -22px rgba(0,0,0,.9);
+  }
+  ::selection{background:#4a2a1c;color:var(--ink)}
+  /* 浅色描边在暗底上会发白，统一收成低透明度白 */
+  .badge,.lbl,.banner{border-color:rgba(255,255,255,.09)}
+  .md a{text-decoration-color:#5a3a2a}
+  .diff-hunk{background:#1b2430;color:#9db8d8;border-color:#243040}
+  .diff-add .t{color:#a8c983}
+  .diff-del .t{color:#e5927c}
+  .hljs-comment,.hljs-quote{color:#7a746a}
+  .hljs-keyword,.hljs-selector-tag,.hljs-literal,.hljs-type{color:#f08a5c}
+  .hljs-string,.hljs-attr,.hljs-addition,.hljs-regexp{color:#9dc07a}
+  .hljs-number,.hljs-symbol,.hljs-bullet{color:#6fc3d8}
+  .hljs-function .hljs-title,.hljs-title.function_,.hljs-title{color:#8fb3f5}
+  .hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#dfae6a}
+  .hljs-variable,.hljs-template-variable,.hljs-name{color:#e0a86c}
+  .hljs-meta,.hljs-doctag{color:#98948b}
+  .hljs-deletion{color:#e26a4c}
+  .login-grid{opacity:.16}
+}
+
+/* ---------- 减少动态效果 ---------- */
+@media(prefers-reduced-motion:reduce){
+  .stagger > *,.fade-in{animation:none}
+  .fold,.chev,.row,.row > .ic:last-child,.btn,.card,.card-flat,.kpi{transition:none}
+  .card:hover{transform:none}
+  .btn:active{transform:none}
+  .row:hover{padding-left:14px}
 }

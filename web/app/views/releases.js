@@ -44,7 +44,8 @@
           this.items = (r.data || []).map(function (x) {
             return Object.assign({}, x, {
               assets: Array.isArray(x.assets) ? x.assets : [],
-              _showAll: false
+              _showAll: false,   // 其余附件折叠
+              _openBody: false   // 更新说明默认只露两行摘要
             });
           });
           const l = API.links(r);
@@ -72,11 +73,32 @@
       open: function (rel) { this.$emit('nav', '#/' + this.full + '/releases/' + encodeURIComponent(rel.tag_name)); },
       copyTag: function (t, ev) { ev.stopPropagation(); ev.preventDefault(); U.copy(t, '标签已复制'); },
       assetIcon: function (n) { return 'package'; },
-      // 列表页附件折叠：默认露出前 4 个（通常是安装包），其余点开看
-      shownAssets: function (rel) {
-        const a = rel.assets || [];
-        return rel._showAll ? a : a.slice(0, 4);
+      // 更新说明摘要：去掉 markdown 标记压成一段纯文本，列表里只露两行
+      preview: function (rel) {
+        const s = String(rel.body || '')
+          .replace(/```[\s\S]*?```/g, ' ')
+          .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+          .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/^\s*[-*+]\s+/gm, '· ')
+          .replace(/^\s*#{1,6}\s+/gm, '')
+          .replace(/[*_`~>|]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return s.length > 170 ? s.slice(0, 170) + '…' : s;
       },
+      toggleBody: function (rel) { rel._openBody = !rel._openBody; },
+      // 安装包排前面：列表里先看到能直接装的那几个，签名/校验文件沉底
+      sortedAssets: function (rel) {
+        const a = rel.assets || [];
+        const isPkg = function (n) {
+          return /\.(apk|aab|apks|xapk|exe|msi|dmg|pkg|deb|rpm|appimage|zip|7z|tgz|tar\.gz)$/i.test(n || '');
+        };
+        return a.filter(function (x) { return isPkg(x.name); })
+          .concat(a.filter(function (x) { return !isPkg(x.name); }));
+      },
+      headAssets: function (rel) { return this.sortedAssets(rel).slice(0, 4); },
+      restAssets: function (rel) { return this.sortedAssets(rel).slice(4); },
       toggleAssets: function (rel) { rel._showAll = !rel._showAll; }
     },
     template:
@@ -100,11 +122,11 @@
 '    <div v-else-if="!items.length" class="card"><div class="empty" style="padding:50px">' +
 '      <icon name="tag" :size="24"></icon><b>还没有发布版本</b>' +
 '      <p>在 GitHub 上创建 Release 后会显示在这里</p></div></div>' +
-'    <div v-else>' +
+'    <div v-else class="stagger">' +
 '      <div v-for="rel in items" :key="rel.id" class="card" style="margin-bottom:14px">' +
 '        <div class="card-head" style="gap:9px;flex-wrap:wrap">' +
-'          <icon name="tag" :size="15" style="color:var(--accent)"></icon>' +
-'          <a class="t" style="font-weight:700;font-size:14px" :href="\'#/\' + full + \'/releases/\' + encodeURIComponent(rel.tag_name)">{{ rel.tag_name }}</a>' +
+'          <a class="chip" :href="\'#/\' + full + \'/releases/\' + encodeURIComponent(rel.tag_name)">' +
+'            <icon name="tag" :size="11"></icon>{{ rel.tag_name }}</a>' +
 '          <span v-if="rel.name && rel.name !== rel.tag_name" class="dim sm">{{ rel.name }}</span>' +
 '          <span v-if="rel.prerelease" class="badge badge-warn">预发布</span>' +
 '          <span v-if="rel.draft" class="badge">草稿</span>' +
@@ -115,19 +137,30 @@
 '          <button class="btn btn-sm btn-quiet" @click="copyTag(rel.tag_name, $event)">' +
 '            <icon name="copy" :size="12"></icon></button>' +
 '        </div>' +
-'        <div class="card-pad" v-if="rel.body">' +
-'          <markdown :source="rel.body.length > 1400 ? rel.body.slice(0, 1400) + \'\\n\\n…\' : rel.body" :owner="o" :repo="r"></markdown>' +
-'          <a v-if="rel.body.length > 1400" class="btn btn-sm" style="margin-top:8px" ' +
-'             :href="\'#/\' + full + \'/releases/\' + encodeURIComponent(rel.tag_name)">阅读全文</a></div>' +
+'        <div class="card-pad" v-if="rel.body" style="padding-bottom:10px">' +
+'          <div v-if="!rel._openBody" class="sm dim clamp2" style="line-height:1.62">{{ preview(rel) }}</div>' +
+'          <div class="fold" :class="{open: rel._openBody}"><div class="fold-inner">' +
+'            <markdown :source="rel.body" :owner="o" :repo="r"></markdown></div></div>' +
+'          <button class="btn btn-sm btn-quiet" style="margin-top:3px;padding:0 6px 0 0" @click="toggleBody(rel)">' +
+'            <icon class="chev" :class="{up: rel._openBody}" name="down" :size="12"></icon>' +
+'            {{ rel._openBody ? \'收起更新说明\' : \'展开更新说明\' }}</button>' +
+'        </div>' +
 '        <div v-if="rel.assets.length" class="row-list" style="border-top:1px solid var(--rule)">' +
-'          <a v-for="a in shownAssets(rel)" :key="a.id" class="row" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
-'            <icon name="download" :size="14" style="color:var(--ink-4);margin-top:2px"></icon>' +
-'            <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:500">{{ a.name }}</span></div>' +
+'          <a v-for="a in headAssets(rel)" :key="a.id" class="row row-primary" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
+'            <icon name="package" :size="14" style="color:var(--accent);margin-top:2px"></icon>' +
+'            <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:600">{{ a.name }}</span></div>' +
 '              <div class="row-meta"><span>{{ U.bytes(a.size) }}</span><span>·</span><span>下载 {{ U.num(a.download_count) }}</span></div></div>' +
-'          </a>' +
+'            <icon name="download" :size="14" style="color:var(--ink-4)"></icon></a>' +
+'          <div class="fold" :class="{open: rel._showAll}"><div class="fold-inner">' +
+'            <a v-for="a in restAssets(rel)" :key="a.id" class="row row-sub" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
+'              <icon name="package" :size="14" style="color:var(--ink-4);margin-top:2px"></icon>' +
+'              <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:500">{{ a.name }}</span></div>' +
+'                <div class="row-meta"><span>{{ U.bytes(a.size) }}</span><span>·</span><span>下载 {{ U.num(a.download_count) }}</span></div></div>' +
+'              <icon name="download" :size="14" style="color:var(--ink-4)"></icon></a>' +
+'          </div></div>' +
 '          <div v-if="rel.assets.length > 4" class="row" style="justify-content:center;cursor:pointer;color:var(--accent-deep)" @click="toggleAssets(rel)">' +
-'            <span class="sm" style="font-weight:600">{{ rel._showAll ? \'收起\' : \'展开全部 \' + rel.assets.length + \' 个附件\' }}</span>' +
-'            <icon :name="rel._showAll ? \'up\' : \'down\'" :size="12"></icon></div>' +
+'            <span class="sm" style="font-weight:600">{{ rel._showAll ? \'收起附件\' : \'其余 \' + (rel.assets.length - 4) + \' 个文件（签名 / 校验等）\' }}</span>' +
+'            <icon class="chev" :class="{up: rel._showAll}" name="down" :size="12"></icon></div>' +
 '        </div>' +
 '        <div class="card-head" style="border-top:1px solid var(--rule);border-bottom:0;gap:12px;flex-wrap:wrap">' +
 '          <span class="sm dim"><icon name="package" :size="13"></icon> {{ (rel.assets || []).length }} 个附件</span>' +
