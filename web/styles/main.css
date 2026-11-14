@@ -628,3 +628,20 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
 /* 登录页左侧深色面板固定深色：否则暗色主题下 --ink 翻白，面板会变成一块亮片 */
 .login-art{background:#171614;color:#fbfaf7}
 .login-art .eyebrow,.login-art .dim{color:#b9b3a7}
+
+/* ---------- 下载进度条（多连接分片下载 dl.js） ---------- */
+.dlbox{position:fixed;right:18px;bottom:18px;z-index:210;width:302px;max-width:calc(100vw - 36px);
+  background:var(--surface);border:1px solid var(--rule-2);border-radius:10px;
+  box-shadow:var(--raised-2);padding:11px 13px;animation:tin .18s ease-out}
+.dlbox-t{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.dlbox-t .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--ink-2)}
+.dlbox-x{border:0;background:transparent;color:var(--ink-4);cursor:pointer;font-size:11.5px;
+  padding:2px 4px;border-radius:4px;transition:color var(--dur-1),background var(--dur-1)}
+.dlbox-x:hover{color:var(--alarm);background:var(--alarm-soft)}
+.dlbox-bar{height:4px;border-radius:3px;background:var(--paper-3);overflow:hidden}
+.dlbox-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;
+  transition:width .2s linear}
+.dlbox-meta{display:flex;justify-content:space-between;gap:10px;margin-top:7px;
+  font-family:var(--mono);font-size:10.5px;color:var(--ink-4)}
+@media(prefers-reduced-motion:reduce){.dlbox{animation:none}.dlbox-bar i{transition:none}}

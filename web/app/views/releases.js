@@ -99,7 +99,16 @@
       },
       headAssets: function (rel) { return this.sortedAssets(rel).slice(0, 4); },
       restAssets: function (rel) { return this.sortedAssets(rel).slice(4); },
-      toggleAssets: function (rel) { rel._showAll = !rel._showAll; }
+      toggleAssets: function (rel) { rel._showAll = !rel._showAll; },
+      // 下载：大文件走多连接分片（dl.js），小文件/异常情况自动退回普通导航
+      dl: function (a, ev) {
+        if (!a || !a.browser_download_url) return;
+        // 中键 / 修饰键：尊重浏览器原生行为（新标签打开）
+        if (ev && (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button === 1)) return;
+        if (!window.DL) return;
+        ev.preventDefault();
+        window.DL.start(U.dlUrl(a.browser_download_url), a.name, a.size);
+      }
     },
     template:
 '<div>' +
@@ -146,13 +155,13 @@
 '            {{ rel._openBody ? \'收起更新说明\' : \'展开更新说明\' }}</button>' +
 '        </div>' +
 '        <div v-if="rel.assets.length" class="row-list" style="border-top:1px solid var(--rule)">' +
-'          <a v-for="a in headAssets(rel)" :key="a.id" class="row row-primary" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
+'          <a v-for="a in headAssets(rel)" :key="a.id" class="row row-primary" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer" @click="dl(a, $event)">' +
 '            <icon name="package" :size="14" style="color:var(--accent);margin-top:1px"></icon>' +
 '            <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:600">{{ a.name }}</span></div></div>' +
 '            <span class="xs dimmer tnum" style="flex:none">{{ U.bytes(a.size) }}</span>' +
 '            <span class="btn btn-sm" style="flex:none">下载</span></a>' +
 '          <div class="fold" :class="{open: rel._showAll}"><div class="fold-inner">' +
-'            <a v-for="a in restAssets(rel)" :key="a.id" class="row row-sub" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
+'            <a v-for="a in restAssets(rel)" :key="a.id" class="row row-sub" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer" @click="dl(a, $event)">' +
 '              <icon name="package" :size="14" style="color:var(--ink-4);margin-top:1px"></icon>' +
 '              <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:500">{{ a.name }}</span></div></div>' +
 '              <span class="xs dimmer tnum" style="flex:none">{{ U.bytes(a.size) }}</span>' +
@@ -200,7 +209,7 @@
 '        <icon name="package" :size="22"></icon><b>没有可下载的附件</b>' +
 '        <p>此发行版仅包含源码快照</p></div>' +
 '      <div v-else class="row-list">' +
-'        <a v-for="a in assets" :key="a.id" class="row" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
+'        <a v-for="a in assets" :key="a.id" class="row" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer" @click="dl(a, $event)">' +
 '          <icon name="package" :size="15" style="color:var(--ink-4);margin-top:2px"></icon>' +
 '          <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:500">{{ a.name }}</span></div>' +
 '            <div class="row-meta"><span>{{ U.bytes(a.size) }}</span>' +
