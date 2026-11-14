@@ -39,7 +39,14 @@
         this.loading = true; this.err = '';
         try {
           const r = await API.releases(this.o, this.r, p);
-          this.items = r.data || [];
+          // 列表页直接挂出附件：/releases 响应本身就带 assets，不用额外请求。
+          // _showAll 是折叠开关，在建对象时就带上，避免动态加属性丢响应式。
+          this.items = (r.data || []).map(function (x) {
+            return Object.assign({}, x, {
+              assets: Array.isArray(x.assets) ? x.assets : [],
+              _showAll: false
+            });
+          });
           const l = API.links(r);
           this.page = p; this.hasNext = !!l.next; this.hasPrev = p > 1;
           this.$emit('cache', r.cache);
@@ -64,7 +71,13 @@
       go: function (p) { this.load(p); },
       open: function (rel) { this.$emit('nav', '#/' + this.full + '/releases/' + encodeURIComponent(rel.tag_name)); },
       copyTag: function (t, ev) { ev.stopPropagation(); ev.preventDefault(); U.copy(t, '标签已复制'); },
-      assetIcon: function (n) { return 'package'; }
+      assetIcon: function (n) { return 'package'; },
+      // 列表页附件折叠：默认露出前 4 个（通常是安装包），其余点开看
+      shownAssets: function (rel) {
+        const a = rel.assets || [];
+        return rel._showAll ? a : a.slice(0, 4);
+      },
+      toggleAssets: function (rel) { rel._showAll = !rel._showAll; }
     },
     template:
 '<div>' +
@@ -106,6 +119,16 @@
 '          <markdown :source="rel.body.length > 1400 ? rel.body.slice(0, 1400) + \'\\n\\n…\' : rel.body" :owner="o" :repo="r"></markdown>' +
 '          <a v-if="rel.body.length > 1400" class="btn btn-sm" style="margin-top:8px" ' +
 '             :href="\'#/\' + full + \'/releases/\' + encodeURIComponent(rel.tag_name)">阅读全文</a></div>' +
+'        <div v-if="rel.assets.length" class="row-list" style="border-top:1px solid var(--rule)">' +
+'          <a v-for="a in shownAssets(rel)" :key="a.id" class="row" :href="U.dlUrl(a.browser_download_url)" target="_blank" rel="noopener noreferrer">' +
+'            <icon name="download" :size="14" style="color:var(--ink-4);margin-top:2px"></icon>' +
+'            <div class="row-main"><div class="row-title"><span class="t mono" style="font-size:12.5px;font-weight:500">{{ a.name }}</span></div>' +
+'              <div class="row-meta"><span>{{ U.bytes(a.size) }}</span><span>·</span><span>下载 {{ U.num(a.download_count) }}</span></div></div>' +
+'          </a>' +
+'          <div v-if="rel.assets.length > 4" class="row" style="justify-content:center;cursor:pointer;color:var(--accent-deep)" @click="toggleAssets(rel)">' +
+'            <span class="sm" style="font-weight:600">{{ rel._showAll ? \'收起\' : \'展开全部 \' + rel.assets.length + \' 个附件\' }}</span>' +
+'            <icon :name="rel._showAll ? \'up\' : \'down\'" :size="12"></icon></div>' +
+'        </div>' +
 '        <div class="card-head" style="border-top:1px solid var(--rule);border-bottom:0;gap:12px;flex-wrap:wrap">' +
 '          <span class="sm dim"><icon name="package" :size="13"></icon> {{ (rel.assets || []).length }} 个附件</span>' +
 '          <span class="sm dim"><icon name="download" :size="13"></icon> ' +
