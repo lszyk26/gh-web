@@ -645,3 +645,12 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
 .dlbox-meta{display:flex;justify-content:space-between;gap:10px;margin-top:7px;
   font-family:var(--mono);font-size:10.5px;color:var(--ink-4)}
 @media(prefers-reduced-motion:reduce){.dlbox{animation:none}.dlbox-bar i{transition:none}}
+
+/* 下载面板：低速提示 + 移动端贴底全宽 */
+.dlbox-hint{margin-top:7px;padding-top:7px;border-top:1px solid var(--rule);
+  font-size:11px;line-height:1.5;color:var(--warn)}
+@media(max-width:640px){
+  .dlbox{right:10px;left:10px;bottom:10px;width:auto;max-width:none;
+    padding:10px 12px;border-radius:12px}
+  .dlbox-t .nm{font-size:11px}
+}

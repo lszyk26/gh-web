@@ -20,6 +20,13 @@
   const DL = { job: null };
   let box = null, els = null;
 
+  function eta(sec) {
+    if (!isFinite(sec) || sec <= 0) return '—';
+    if (sec < 60) return Math.ceil(sec) + ' 秒';
+    if (sec < 3600) return Math.ceil(sec / 60) + ' 分';
+    return Math.floor(sec / 3600) + ' 小时 ' + Math.round((sec % 3600) / 60) + ' 分';
+  }
+
   function fmt(n) {
     if (!n || n < 0) return '0 B';
     const u = ['B', 'KB', 'MB', 'GB'];
@@ -37,7 +44,8 @@
         '<button class="dlbox-x alt" type="button" title="改走浏览器单连接下载">直连</button>' +
         '<button class="dlbox-x" type="button">取消</button></div>' +
         '<div class="dlbox-bar"><i></i></div>' +
-        '<div class="dlbox-meta"><span class="pct"></span><span class="spd"></span></div>';
+        '<div class="dlbox-meta"><span class="pct"></span><span class="spd"></span></div>' +
+        '<div class="dlbox-hint" style="display:none"></div>';
       document.body.appendChild(box);
       els = {
         nm: box.querySelector('.nm'),
@@ -45,7 +53,8 @@
         pct: box.querySelector('.pct'),
         spd: box.querySelector('.spd'),
         x: box.querySelector('.dlbox-x:not(.alt)'),
-        alt: box.querySelector('.dlbox-x.alt')
+        alt: box.querySelector('.dlbox-x.alt'),
+        hint: box.querySelector('.dlbox-hint')
       };
       els.x.addEventListener('click', function () { DL.cancel(); });
       // 兜底出口：分片反而更慢时，一键退回浏览器单连接下载
@@ -59,6 +68,8 @@
     els.bar.style.width = '0%';
     els.pct.textContent = '连接中…';
     els.spd.textContent = '';
+    els.hint.style.display = 'none';
+    els.hint.textContent = '';
     box.style.display = '';
     return els;
   }
@@ -131,9 +142,18 @@
       lastPaint = now;
       const pct = Math.min(100, job.loaded / total * 100);
       e.bar.style.width = pct.toFixed(1) + '%';
+      const sec = (now - t0) / 1000;
+      const spd = job.loaded / Math.max(sec, 0.2);
+      const left = total - job.loaded;
       e.pct.textContent = pct.toFixed(0) + '%  ' + fmt(job.loaded) + ' / ' + fmt(total);
-      const spd = job.loaded / Math.max((now - t0) / 1000, 0.2);
-      e.spd.textContent = fmt(spd) + '/s';
+      e.spd.textContent = fmt(spd) + '/s' + (left > 0 ? ' · 剩 ' + eta(left / spd) : '');
+      // 8 秒后仍低于 100KB/s：多半是本地链路问题，直接给出口
+      if (sec > 8 && spd < 100 * 1024) {
+        if (e.hint.style.display === 'none') {
+          e.hint.style.display = '';
+          e.hint.textContent = '链路很慢：可点「直连」对比，或换 WiFi / 换网络再试。';
+        }
+      }
     };
 
     const tasks = [];
