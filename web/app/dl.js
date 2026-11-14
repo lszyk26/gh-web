@@ -103,6 +103,9 @@
   DL.start = async function (url, name, size) {
     if (DL.job) { if (window.U && U.toast) U.toast('已有一个下载在进行'); return; }
 
+    // 元数据已经知道大小且不在分片区间内（.sig / .asc 这类），连探测都省掉
+    if (size && (size < MIN || size > MAX)) { window.location.href = url; return; }
+
     let meta = null;
     try { meta = await probe(url); } catch (e) { meta = null; }
     const total = (meta && meta.total) || size || 0;
