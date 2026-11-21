@@ -364,7 +364,10 @@
     return i <= 0 ? '' : b.slice(i + 1).toLowerCase();
   };
   // release 附件 / 源码快照走边缘下载加速：CF Worker 的 /dl/ 分支（cd /opt/cf-web-proxy）
-  U.dlUrl = function (u) { return u ? '/dl/' + encodeURIComponent(u) : ''; };
+  // 下载走独立子域 dl.0lt.top：CF 边缘直连 GitHub 流式回传（实测 3MB / 1.4s，Range 206 正常）。
+  // 为什么不走 ghs.0lt.top 自己的 /dl：CNMCDN 会吃掉 Range 头、且不缓存大文件，
+  // 实测同一文件要 12~35 秒（2026-11-21）。页面与静态资源仍走 CNMCDN。
+  U.dlUrl = function (u) { return u ? 'https://dl.0lt.top/dl/' + encodeURIComponent(u) : ''; };
   U.rawUrl = function (owner, repo, ref, path) {
     return 'https://raw.githubusercontent.com/' + owner + '/' + repo + '/' + ref + '/' + path;
   };
