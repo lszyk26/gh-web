@@ -363,11 +363,12 @@
     const i = b.lastIndexOf('.');
     return i <= 0 ? '' : b.slice(i + 1).toLowerCase();
   };
-  // release 附件 / 源码快照走边缘下载加速：CF Worker 的 /dl/ 分支（cd /opt/cf-web-proxy）
-  // 下载走独立子域 dl.0lt.top：CF 边缘直连 GitHub 流式回传（实测 3MB / 1.4s，Range 206 正常）。
-  // 为什么不走 ghs.0lt.top 自己的 /dl：CNMCDN 会吃掉 Range 头、且不缓存大文件，
-  // 实测同一文件要 12~35 秒（2026-11-21）。页面与静态资源仍走 CNMCDN。
-  U.dlUrl = function (u) { return u ? 'https://dl.0lt.top/dl/' + encodeURIComponent(u) : ''; };
+  // release 附件 / 源码快照走下载加速，两条链路：
+  //   主路：页面同源 /dl/（源站 ghdl.py 流式回传，跟页面同一张 CDN，可达性最稳）
+  //   备路：https://dl.0lt.top/dl/（CF 边缘直连 GitHub，快；但部分网络到 CF 不通）
+  // dl.js 先探主路，主路不通自动切备路，不会卡死。
+  U.dlUrl = function (u) { return u ? '/dl/' + encodeURIComponent(u) : ''; };
+  U.dlAltUrl = function (u) { return u ? 'https://dl.0lt.top/dl/' + encodeURIComponent(u) : ''; };
   U.rawUrl = function (owner, repo, ref, path) {
     return 'https://raw.githubusercontent.com/' + owner + '/' + repo + '/' + ref + '/' + path;
   };

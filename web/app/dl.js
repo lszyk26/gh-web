@@ -111,17 +111,36 @@
     DL.job = null;
   };
 
-  DL.start = async function (url, name, size) {
+  /* 主路（同源 /dl/）不通时，换成 CF 子域那条备路 */
+  function altOf(u) {
+    if (!u) return null;
+    if (u.indexOf('/dl/') === 0) return 'https://dl.0lt.top' + u;
+    if (u.indexOf('https://dl.0lt.top/dl/') === 0) return u.slice('https://dl.0lt.top'.length);
+    return null;
+  }
+
+  /* 带超时的探测：链路被掐时 fetch 会一直挂着，必须自己叫停 */
+  function probeWithTimeout(u, ms) {
+    return new Promise(function (resolve, reject) {
+      let done = false;
+      const timer = setTimeout(function () { if (!done) { done = true; reject(new Error('timeout')); } }, ms);
+      probe(u).then(function (m) { if (!done) { done = true; clearTimeout(timer); resolve(m); } },
+                    function (e) { if (!done) { done = true; clearTimeout(timer); reject(e); } });
+    });
+  }
+
+  DL.start = async function (src, name, size) {
     if (DL.job) { if (window.U && U.toast) U.toast('已有一个下载在进行'); return; }
 
-    // 元数据已经知道大小且不在分片区间内（.sig / .asc 这类），连探测都省掉
-    if (size && (size < MIN || size > MAX)) { window.location.href = url; return; }
-
-    let meta = null;
-    try { meta = await probe(url); } catch (e) { meta = null; }
+    const alt = altOf(src);
+    let url = src, meta = null;
+    try { meta = await probeWithTimeout(src, 20000); } catch (e) { meta = null; }
+    if (!meta && alt) {
+      try { meta = await probeWithTimeout(alt, 6000); if (meta) url = alt; } catch (e) { meta = null; }
+    }
     const total = (meta && meta.total) || size || 0;
 
-    // 不分片的情况直接交给浏览器（同样是 /dl/ 加速链路，只是单连接）
+    // 不分片的情况直接交给浏览器（同一条加速链路，只是单连接，可暂停/续传）
     if (!meta || !meta.range || total < MIN || total > MAX) {
       window.location.href = url;
       return;
