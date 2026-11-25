@@ -41,10 +41,10 @@ ok('ctxFromHash 对非仓库路由返回 null', U.ctxFromHash() === null);
 U.imgContext('alchaincyf', 'huashu-art-motion', 'main');
 const r1 = U.resolveImgSrc('assets/showcase/hero.png');
 ok('相对路径 -> raw.githubusercontent.com',
-  r1 === 'https://raw.githubusercontent.com/alchaincyf/huashu-art-motion/main/assets/showcase/hero.png', r1);
-ok('./ 前缀也能处理', U.resolveImgSrc('./assets/a.png').indexOf('/main/assets/a.png') > 0);
+  r1 === 'https://dl.0lt.top/dl/' + encodeURIComponent('https://raw.githubusercontent.com/alchaincyf/huashu-art-motion/main/assets/showcase/hero.png'), r1);
+ok('./ 前缀也能处理', U.resolveImgSrc('./assets/a.png').indexOf(encodeURIComponent('/main/assets/a.png')) > 0);
 ok('URL 编码：中文与非 ASCII 文件名',
-  U.resolveImgSrc('assets/动画语法/y1_kurzgesagt_总览.jpg').indexOf('/main/assets/%E5%8A%A8%E7%94%BB%E8%AF%AD%E6%B3%95/') > 0,
+  U.resolveImgSrc('assets/动画语法/y1_kurzgesagt_总览.jpg').indexOf(encodeURIComponent('/main/assets/' + encodeURIComponent('动画语法') + '/')) > 0,
   U.resolveImgSrc('assets/动画语法/y1_kurzgesagt_总览.jpg'));
 ok('绝对地址不动', U.resolveImgSrc('https://example.com/a.png') === 'https://example.com/a.png');
 ok('data: 不动', U.resolveImgSrc('data:image/png;base64,AAA') === 'data:image/png;base64,AAA');
@@ -69,9 +69,9 @@ const md = [
   '</div>'
 ].join('\n');
 const html = U.md(md);
-ok('HTML 标签里的相对 src 被改写', html.indexOf('src="https://raw.githubusercontent.com/alchaincyf/huashu-art-motion/main/assets/showcase/hero.png"') > 0, html.slice(0, 400));
-ok('Markdown 语法 ![]() 的相对 src 被改写', html.indexOf('src="https://raw.githubusercontent.com/alchaincyf/huashu-art-motion/main/assets/showcase/mario-claude.gif"') > 0);
-ok('原有绝对地址保持不变', html.indexOf('alchaincyf/x/main/keep.png') > 0 && html.indexOf('alchaincyf/x/raw/main/keep2.png') > 0);
+ok('HTML 标签里的相对 src 被改写', html.indexOf('src="https://dl.0lt.top/dl/' + encodeURIComponent('https://raw.githubusercontent.com/alchaincyf/huashu-art-motion/main/assets/showcase/hero.png') + '"') > 0, html.slice(0, 400));
+ok('Markdown 语法 ![]() 的相对 src 被改写', html.indexOf('src="https://dl.0lt.top/dl/' + encodeURIComponent('https://raw.githubusercontent.com/alchaincyf/huashu-art-motion/main/assets/showcase/mario-claude.gif') + '"') > 0);
+ok('原有绝对地址保持不变', html.indexOf(encodeURIComponent('https://raw.githubusercontent.com/alchaincyf/x/main/keep.png')) > 0 && html.indexOf('src="https://github.com/alchaincyf/x/raw/main/keep2.png"') > 0);
 ok('不再残留站点内的相对图片路径', html.indexOf('src="assets/') < 0, html);
 ok('图片的 alt 未被破坏', html.indexOf('alt="总览图"') > 0);
 

@@ -96,6 +96,7 @@
     watch: { src: function () { this.err = false; } },
     computed: {
       ini: function () { return U.initials(this.alt || this.user); },
+      imgSrc: function () { return (window.U && U.ghImg) ? U.ghImg(this.src) : this.src; },
       box: function () {
         return {
           width: this.size + 'px', height: this.size + 'px',
@@ -105,7 +106,7 @@
       }
     },
     template:
-      '<img v-if="src && !err" class="av" :src="src" :alt="alt || user || \'\'" ' +
+      '<img v-if="src && !err" class="av" :src=imgSrc :alt="alt || user || \'\'" ' +
       ':style="box" @error="err = true" loading="lazy" referrerpolicy="no-referrer">' +
       '<span v-else class="av av-fb" :style="box" :title="alt || user">{{ ini }}</span>'
   };

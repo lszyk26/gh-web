@@ -62,7 +62,7 @@
           const pReadme = API.readme(this.o, this.r).then(function (rd) {
             if (rd && rd.content) return decodeB64(rd.content);
             if (rd && rd.download_url) {
-              return fetch(rd.download_url).then(function (x) { return x.text(); });
+              return fetch(U.ghImg(rd.download_url)).then(function (x) { return x.text(); });
             }
             return '';
           }).catch(function () { return ''; });

@@ -117,7 +117,7 @@
               self.fileText = window.__b64(data.content);
               self.tooBig = false;
             } else if (data.download_url) {
-              fetch(data.download_url).then(function (x) { return x.text(); })
+              fetch(U.ghImg(data.download_url)).then(function (x) { return x.text(); })
                 .then(function (t) { self.fileText = t; }).catch(function () { });
             }
           } else if (data && data.type === 'symlink') {

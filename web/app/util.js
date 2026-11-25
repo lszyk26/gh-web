@@ -235,23 +235,37 @@
     const path = raw.replace(/^\.\//, '').replace(/^\//, '');
     const ctx = imgCtx || U.ctxFromHash();
     if (ctx) {
-      return 'https://raw.githubusercontent.com/' + ctx.o + '/' + ctx.r + '/' +
+      const abs = 'https://raw.githubusercontent.com/' + ctx.o + '/' + ctx.r + '/' +
         encodeURIComponent(ctx.ref) + '/' +
         path.split('/').map(encodeURIComponent).join('/');
+      return U.ghImg(abs);
     }
     // 完全取不到仓库信息：退回 GitHub 的 raw 端点，它会按 Referer 猜仓库并跳转
     return 'https://github.com/raw/' + path;
   };
 
+  /* GitHub 系图床 URL → CF 边缘代理（dl.0lt.top/dl/）。
+     覆盖 raw / avatars / camo / media.githubusercontent.com。
+     这些域名直连在国内/手机上基本不可用，走 CF 边缘有回源缓存。 */
+  U.ghImg = function (u) {
+    const s = String(u || '');
+    if (/^https?:\/\/(raw|avatars|camo|media)\.githubusercontent\.com\//i.test(s)) {
+      return 'https://dl.0lt.top/dl/' + encodeURIComponent(s);
+    }
+    return s;
+  };
+
   // 只改 src= 属性，不碰 alt/title 里的内容
   U.rewriteImg = function (html) {
+    // rewrite 所有 GitHub 系图片源（含绝对地址）：resolveImgSrc 处理相对路径，
+    // ghImg 把 GitHub 图床统一拉到 CF 边缘代理（国内直连这些域名基本超时）
     return String(html || '')
       .replace(/(<img\b[^>]*?)\ssrc=(["'])([^"']*)\2/gi, function (m, head, q, src) {
-        const abs = U.resolveImgSrc(src);
+        const abs = U.ghImg(U.resolveImgSrc(src));
         return abs === src ? m : head + ' src=' + q + abs + q;
       })
       .replace(/(<img\b[^>]*?)\ssrc=([^\s"'>]+)/gi, function (m, head, src) {
-        const abs = U.resolveImgSrc(src);
+        const abs = U.ghImg(U.resolveImgSrc(src));
         return abs === src ? m : head + ' src="' + abs + '"';
       });
   };
