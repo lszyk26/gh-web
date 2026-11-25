@@ -18,14 +18,7 @@
     },
     computed: {
       user: function () { return this.shell && this.shell.user; },
-      greeting: function () {
-        const h = new Date().getHours();
-        if (h < 5) return '深夜好';
-        if (h < 11) return '早上好';
-        if (h < 14) return '中午好';
-        if (h < 18) return '下午好';
-        return '晚上好';
-      },
+      greeting: function () { return '概览'; },
       privateCount: function () {
         return this.repos.filter(function (r) { return r.private; }).length;
       },
@@ -98,7 +91,7 @@
 '  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:20px;flex-wrap:wrap">' +
 '    <div style="flex:1;min-width:240px">' +
 '      <div class="eyebrow">工作台</div>' +
-'      <h1 style="margin-top:5px">{{ greeting }}，{{ userName }}</h1>' +
+'      <h1 style="margin-top:5px">{{ greeting }}</h1>' +
 '      <p class="muted-line" style="margin:5px 0 0">' +
 '        {{ totalRepos }} 个仓库 · {{ totalStars }} 项星标 · {{ following.length }} 位关注 · ' +
 '        {{ unread.length }} 条未读</p>' +

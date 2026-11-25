@@ -70,15 +70,6 @@
 '          <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;opacity:.6;text-transform:uppercase">github · local mirror</div>' +
 '        </div>' +
 '      </div>' +
-'      <div style="margin-top:34px;max-width:430px">' +
-'        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.2em;opacity:.5;text-transform:uppercase;margin-bottom:12px">为什么快</div>' +
-'        <div style="display:flex;flex-direction:column;gap:13px">' +
-'          <div style="display:flex;gap:11px"><span class="mono" style="color:var(--accent);opacity:.95">01</span>' +
-'            <span style="font-size:13px;opacity:.82;line-height:1.5">页面与前端资源全部本地直出，不加载 GitHub 的整页脚本</span></div>' +
-'          <div style="display:flex;gap:11px"><span class="mono" style="color:var(--accent);opacity:.95">02</span>' +
-'            <span style="font-size:13px;opacity:.82;line-height:1.5">API 响应经本地缓存层，重复浏览命中缓存，通常在十毫秒内返回</span></div>' +
-'          <div style="display:flex;gap:11px"><span class="mono" style="color:var(--accent);opacity:.95">03</span>' +
-'            <span style="font-size:13px;opacity:.82;line-height:1.5">只读镜像：不写入、不改动你的任何仓库数据</span></div>' +
 '        </div>' +
 '      </div>' +
 '    </div>' +
