@@ -21,6 +21,9 @@ IDX="$ROOT/web/index.html"
 [[ -f $IDX ]] || { echo "找不到 $IDX"; exit 1; }
 
 NEW="${1:-$(date +%Y%m%d%H%M%S)}"
+# 收集文件里【所有】不同版本号（历史遗留可能混用多套，比如 util.js=20261123a
+# 而其余=20261125c）。只换第一个会出现「util.js 永远不被 bump」的事故（2026-11-25 实际踩到）。
+OLD_LIST=$(grep -oE '\?v=[A-Za-z0-9._-]+' "$IDX" | cut -d= -f2 | sort -u | tr '\n' ' ' || true)
 OLD=$(grep -oE '\?v=[A-Za-z0-9._-]+' "$IDX" | head -1 | cut -d= -f2 || true)
 
 if [[ -z "${OLD:-}" ]]; then
@@ -32,12 +35,17 @@ fi
 
 python3 - "$IDX" "$OLD" "$NEW" <<'PY'
 import sys
-path, old, new = sys.argv[1], sys.argv[2], sys.argv[3]
+path, new = sys.argv[1], sys.argv[2]
 s = open(path, encoding='utf-8').read()
-n = s.count('?v=' + old)
-s = s.replace('?v=' + old, '?v=' + new)
+import re
+olds = sorted(set(re.findall(r'\?v=([A-Za-z0-9._-]+)', s)))
+total = 0
+for old in olds:
+    if old == new: continue
+    total += s.count('?v=' + old)
+    s = s.replace('?v=' + old, '?v=' + new)
 open(path, 'w', encoding='utf-8').write(s)
-print('版本号 %s -> %s（替换 %d 处）' % (old, new, n))
+print('版本号 %s -> %s（共 %d 处，统一自 %d 套旧版本号）' % (','.join(olds), new, total, len(olds)))
 PY
 
 echo "完成。静态文件已更新，浏览器下次加载会重新拉取全部前端资源。"
