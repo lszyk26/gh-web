@@ -195,7 +195,7 @@ async function main() {
     '#/trends?period=today&mode=active&lang=Go': ['发现', '搜索式', 'language:Go'],
     '#/settings': ['访问凭证', '接口额度', '缓存'],
     '#/users/lszyk26': ['正在关注', '获得星标'],
-    '#/lszyk26/gh-mcp': ['README', '语言', '贡献者', 'raw.githubusercontent.com/lszyk26/gh-mcp'],
+    '#/lszyk26/gh-mcp': ['README', '语言', '贡献者', encodeURIComponent('https://raw.githubusercontent.com/lszyk26/gh-mcp')],
     '#/lszyk26/gh-mcp/code/tree/main': ['package.json', 'README.md'],
     '#/lszyk26/gh-mcp/code/blob/main/README.md': ['README.md'],
     '#/lszyk26/gh-mcp/issues': ['议题', '示例议题 1'],

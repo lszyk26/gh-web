@@ -654,3 +654,64 @@ table.code tr:hover td.ln{background:var(--paper-2);color:var(--ink-4)}
     padding:10px 12px;border-radius:12px}
   .dlbox-t .nm{font-size:11px}
 }
+
+/* ============================================================
+   2026-11-25 · 手机真机适配（第二轮，实测驱动）
+   ------------------------------------------------------------
+   实测（390x844 视口）暴露的问题：
+   1. 输入框 13px → iOS Safari 聚焦自动放大整页且不回缩
+   2. 触控目标：按钮 26~31px、面包屑链接 19px，全部低于 44px 标准
+   3. 下载面板贴底 10px，被 iPhone 手势条挡住
+   4. 无 overscroll-behavior → 列表拉顶误触发下拉刷新、滚动丢失
+   5. 密度按桌面缩：正文 14px、辅助 11.5px、mono 标签 10px
+   ============================================================ */
+
+/* ---------- 滚动链：任何地方都不要把滚动「链」给 body ---------- */
+html{overscroll-behavior-y:none}
+body,.content,.card-body,.nav{overscroll-behavior:contain}
+
+/* ---------- 触控目标：伪元素扩充可点面积（不改布局） ----------
+   按钮本体太矮，用 ::after 扩出 44px 高的可点热区。 */
+@media(pointer:coarse){
+  .btn,.btn-sm,.seg > button{position:relative}
+  .btn::after,.btn-sm::after,.seg > button::after{
+    content:'';position:absolute;inset:-7px -8px;pointer-events:none
+  }
+  .btn,.btn-sm,.seg > button{position:relative}
+  .crumb a::after,.dlbox-x::after,.nav-count::after{
+    content:'';position:absolute;inset:-8px -10px;pointer-events:none
+  }
+  .crumb a,.dlbox-x,.nav-count{position:relative}
+  /* 行内链接（列表标题等）热区扩到上下 6px */
+  .row-title a::after,.crumb a::after{
+    content:'';position:absolute;inset:-6px -4px;pointer-events:none
+  }
+  .row-title a{position:relative}
+}
+
+/* ---------- 手机正文密度 ---------- */
+@media(max-width:680px){
+  body{font-size:15px;line-height:1.62}
+  .sm{font-size:13.5px}.xs{font-size:12.5px}
+  .row-meta,.row-side{font-size:12px}
+  .mono-num{font-size:12.5px}
+  h1{font-size:21px}h2{font-size:19px}h3{font-size:16px}
+
+  /* ---------- 输入框：16px 防 iOS 聚焦缩放 ---------- */
+  .input{font-size:16px}
+  textarea.input{font-size:16px;line-height:1.5}
+  .btn,.btn-sm{font-size:13px}
+  .seg > button{font-size:12.5px}
+
+  /* ---------- 安全区：侧栏抽屉 + 底部元素让位手势条 ---------- */
+  .sidebar{padding-top:env(safe-area-inset-top)}
+  .topbar{height:calc(49px + env(safe-area-inset-top))}
+  .dlbox{
+    bottom:calc(10px + env(safe-area-inset-bottom));
+    padding-bottom:calc(10px + env(safe-area-inset-bottom))
+  }
+
+  /* ---------- 汉堡按钮：44px 可点 ---------- */
+  .rail-btn{min-width:44px !important;min-height:44px !important;
+    display:inline-flex;align-items:center;justify-content:center}
+}
