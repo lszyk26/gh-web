@@ -106,7 +106,7 @@
       }
     },
     template:
-      '<img v-if="src && !err" class="av" :src=imgSrc :alt="alt || user || \'\'" ' +
+      '<img v-if="src && !err" class="av" :src="imgSrc" :alt="alt || user || \'\'" ' +
       ':style="box" @error="err = true" loading="lazy" referrerpolicy="no-referrer">' +
       '<span v-else class="av av-fb" :style="box" :title="alt || user">{{ ini }}</span>'
   };
