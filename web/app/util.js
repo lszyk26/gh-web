@@ -367,10 +367,12 @@
   //   主路：页面同源 /dl/（源站 ghdl.py 流式回传，跟页面同一张 CDN，可达性最稳）
   //   备路：https://dl.0lt.top/dl/（CF 边缘直连 GitHub，快；但部分网络到 CF 不通）
   // dl.js 先探主路，主路不通自动切备路，不会卡死。
-  U.dlUrl = function (u) { return u ? '/dl/' + encodeURIComponent(u) : ''; };
-  U.dlAltUrl = function (u) { return u ? 'https://dl.0lt.top/dl/' + encodeURIComponent(u) : ''; };
+  U.dlUrl = function (u) { return u ? 'https://dl.0lt.top/dl/' + encodeURIComponent(u) : ''; };
+  U.dlAltUrl = function (u) { return u ? '/dl/' + encodeURIComponent(u) : ''; };
   U.rawUrl = function (owner, repo, ref, path) {
-    return 'https://raw.githubusercontent.com/' + owner + '/' + repo + '/' + ref + '/' + path;
+    // 走 CF 边缘代理（dl.0lt.top/dl/）而不是直连 raw.githubusercontent.com：
+    // 源站与国内直连 GitHub 都极慢，CF 边缘有回源缓存，手机上明显更快
+    return 'https://dl.0lt.top/dl/' + encodeURIComponent('https://raw.githubusercontent.com/' + owner + '/' + repo + '/' + ref + '/' + path);
   };
 
   window.U = U;
